@@ -39,7 +39,6 @@ const AVAILABLE_SHAPES = [
   { id: 'wedge', label: 'Wedge' },
   { id: 'star', label: 'Star' },
   { id: 'cloud', label: 'Cloud' },
-  { id: 'heart', label: 'Heart' },
   { id: 'square', label: 'Square' },
   { id: 'drop', label: 'Drop' },
 ];

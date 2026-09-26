@@ -24,7 +24,7 @@ impl SettingsWindow {
         let window = event_loop
             .create_window(
                 WindowAttributes::default()
-                    .with_title("dango 设置")
+                    .with_title("Dango 设置")
                     .with_inner_size(LogicalSize::new(780.0, 580.0))
                     .with_min_inner_size(LogicalSize::new(560.0, 420.0))
                     .with_resizable(true)
