@@ -8,12 +8,14 @@ UA='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, l
 chars=$(python3 - <<'PY'
 import re, urllib.parse
 s = open('../index.html').read(); body = s[s.index('<body'):]
-t = ''.join(re.sub(r'<[^>]+>', '', m.group(0)) for m in re.finditer(r'<h2>(.*?)</h2>|<span class="cn">(.*?)</span>', body, re.S))
+t = ''.join(re.sub(r'<[^>]+>', '', m.group(0)) for m in re.finditer(r'<h2[^>]*>(.*?)</h2>|<span class="cn"[^>]*>(.*?)</span>', body, re.S))
 t += '额度团子开心还行垮脸哭了Dango'
 print(urllib.parse.quote(''.join(sorted(set(c for c in t if not c.isspace())))))
 PY
 )
 get() { curl -sS -m 30 -A "$UA" "$1" | grep -o 'https://fonts.gstatic.com[^)]*' | head -1; }
 curl -sS -m 30 -o kuaile-sub.woff2 "$(get "https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&text=$chars")"
-curl -sS -m 30 -o nunito-dango.woff2 "$(get "https://fonts.googleapis.com/css2?family=Nunito:wght@800&text=Dango")"
+# Nunito：英文版标题要用，切整套可打印 ASCII
+ascii=$(python3 -c "import urllib.parse; print(urllib.parse.quote(''.join(chr(c) for c in range(32,127))))")
+curl -sS -m 30 -o nunito-dango.woff2 "$(get "https://fonts.googleapis.com/css2?family=Nunito:wght@800&text=$ascii")"
 ls -l *.woff2

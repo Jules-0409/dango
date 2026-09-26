@@ -10,7 +10,7 @@
 
 我同时开着好几家 AI 编程的会员，老是写到一半才发现额度没了。所以做了 Dango：屏幕边上一条细细的玻璃胶囊，一颗球是一家。额度多它就笑，快没了就垮脸，查不到就哭，不会拿旧数字糊弄你。
 
-![Dango 在桌面上](site/img/capsule.png)
+<p align="center"><img src="site/img/demo.gif" width="480" alt="鼠标放上去看卡片，连戳五下撒花"></p>
 
 ## 下载
 

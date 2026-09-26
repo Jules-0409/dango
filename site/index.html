@@ -93,6 +93,11 @@
   .nav a.l:hover{color:var(--ink);}
   @media(max-width:600px){.nav a.l.opt{display:none;}}
 
+  .lang{font:600 11.5px/1 var(--f-mono);letter-spacing:.06em;padding:6px 10px;border-radius:99px;border:0;cursor:pointer;
+    background:var(--etch);color:var(--ink-2);box-shadow:inset 0 0 0 1px var(--hair);}
+  .lang:hover{color:var(--ink);}
+  html[lang="en"] h2, html[lang="en"] h1 .cn{font-family:"Dango Round",var(--f-ui);font-weight:800;letter-spacing:-.01em;}
+  html[lang="en"] h1 .cn{letter-spacing:.08em;}
   /* ── hero：上面一行字，下面一整块演示桌面 ── */
   .hero{padding-top:108px;padding-bottom:40px;}
   .hero-top{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:end;gap:clamp(24px,5vw,72px);}
@@ -373,11 +378,12 @@
 
 <nav class="nav glass" aria-label="页面导航">
   <a class="mark" href="#top"><img src="img/icon.png" alt="">Dango</a>
-  <a class="l opt" href="#mood">看脸色</a>
-  <a class="l opt" href="#add">加小球</a>
+  <a class="l opt" href="#mood" data-i="i0">看脸色</a>
+  <a class="l opt" href="#add" data-i="i1">加小球</a>
   <a class="l opt" href="#tokens">Token</a>
-  <a class="l" href="#oss">下载</a>
-  <a class="l" href="https://www.liujufu.com">首页 ↗</a>
+  <a class="l" href="#oss" data-i="i2">下载</a>
+  <a class="l" href="https://www.liujufu.com" data-i="i3">首页 ↗</a>
+  <button class="lang" id="langBtn" type="button" aria-label="Switch language">EN</button>
 </nav>
 
 <main id="top">
@@ -385,16 +391,16 @@
 <section class="hero wrap">
   <div class="hero-top">
     <div>
-      <div class="kicker rise d1">Mac 上的额度小挂件</div>
-      <h1 class="rise d2">Dango<span class="cn">额度团子</span></h1>
+      <div class="kicker rise d1" data-i="i4">Mac 上的额度小挂件</div>
+      <h1 class="rise d2">Dango<span class="cn" data-i="cn">额度团子</span></h1>
     </div>
     <div class="rise d3">
-      <p class="lede">
+      <p class="lede" data-i="i5">
         我同时开着好几家 AI 的会员，老是用着用着额度就没了。
         所以做了这串团子挂在屏幕边上：一颗是一家，<b>额度多它就笑</b>，快没了就垮脸，查不到干脆哭给你看。
       </p>
       <div class="cta">
-        <a class="btn btn-primary" href="#oss">下载 Mac 版 ↓</a>
+        <a class="btn btn-primary" href="#oss" data-i="i6">下载 Mac 版 ↓</a>
         <a class="btn btn-ghost" id="ghBtn" href="https://github.com/Jules-0409/dango">GitHub ↗</a>
       </div>
     </div>
@@ -402,7 +408,7 @@
 
   <div class="desk auto-night rise d4" id="desk">
     <div class="menubar" aria-hidden="true">
-      <span class="l"><b>Dango</b><span>文件</span><span>编辑</span><span>显示</span></span>
+      <span class="l" data-i="i7"><b>Dango</b><span>文件</span><span>编辑</span><span>显示</span></span>
       <span class="r"><img src="img/icon.png" alt=""><span id="clock">20:00</span></span>
     </div>
     <div class="win" aria-hidden="true"><div class="bar"><i></i><i></i><i></i></div>
@@ -415,24 +421,24 @@
       <svg class="shape" id="cardShape"><path id="cardPath"/></svg>
       <div class="body" id="cardBody"></div>
     </div>
-    <div class="dhint">可以拖着走 · 鼠标放上去看详情 · 戳它 · 点顶上的弧收起来</div>
+    <div class="dhint" data-i="i8">可以拖着走 · 鼠标放上去看详情 · 戳它 · 点顶上的弧收起来</div>
   </div>
 
   <div class="desk-ctl">
-    <div class="pills" role="group" aria-label="环的样式" id="ringPills"><span class="t">外环</span></div>
+    <div class="pills" role="group" aria-label="环的样式" id="ringPills" data-i="i9"><span class="t">外环</span></div>
     <div class="pills">
-      <button type="button" id="bRefresh">刷新一下</button>
-      <button type="button" id="bReset">Cursor 额度回来了</button>
-      <button type="button" id="bErr">Factory 挂了</button>
-      <button type="button" id="bNight">关灯</button>
+      <button type="button" id="bRefresh" data-i="i10">刷新一下</button>
+      <button type="button" id="bReset" data-i="i11">Cursor 额度回来了</button>
+      <button type="button" id="bErr" data-i="i12">Factory 挂了</button>
+      <button type="button" id="bNight" data-i="i13">关灯</button>
     </div>
   </div>
 </section>
 
 <!-- ═══════════ 看脸色 ═══════════ -->
 <section id="mood" class="wrap">
-  <h2>不用看数字，<br><em>看脸色就行</em></h2>
-  <p class="sec-sub">外圈是还剩多少，中间那张脸是它的心情。拖拖滑块把额度花掉看看，或者连着戳它几下。</p>
+  <h2 data-i="i14">不用看数字，<br><em>看脸色就行</em></h2>
+  <p class="sec-sub" data-i="i15">外圈是还剩多少，中间那张脸是它的心情。拖拖滑块把额度花掉看看，或者连着戳它几下。</p>
 
   <div class="mood">
     <div class="mood-ball">
@@ -447,136 +453,136 @@
       <div class="ctrl">
         <input type="range" id="moodRange" min="0" max="100" value="82" aria-label="剩余额度">
         <div class="ctrl-row">
-          <button class="btn btn-ghost" id="breakBtn" type="button">弄挂它</button>
-          <button class="btn btn-ghost" id="refillBtn" type="button">额度回来了</button>
+          <button class="btn btn-ghost" id="breakBtn" type="button" data-i="i16">弄挂它</button>
+          <button class="btn btn-ghost" id="refillBtn" type="button" data-i="i17">额度回来了</button>
         </div>
       </div>
     </div>
 
     <div class="legend" id="legend">
-      <div class="item" data-band="happy"><div class="lb" data-emo="10"></div><div><h3>开心 · 60% 以上</h3><p>随便用。</p></div></div>
-      <div class="item" data-band="ok"><div class="lb" data-emo="19"></div><div><h3>还行 · 15% 到 60%</h3><p>环变橙了，省着点。</p></div></div>
-      <div class="item" data-band="low"><div class="lb" data-emo="12"></div><div><h3>垮脸 · 不到 15%</h3><p>环变红了，换一家吧，或者等它重置。</p></div></div>
-      <div class="item" data-band="err"><div class="lb" data-emo="34"></div><div><h3>哭了 · 查不到</h3><p>登录过期、断网、接口改了都会这样。红虚线一直转，卡片里写着怎么修。</p></div></div>
+      <div class="item" data-band="happy"><div class="lb" data-emo="10"></div><div data-i="i18"><h3>开心 · 60% 以上</h3><p>随便用。</p></div></div>
+      <div class="item" data-band="ok"><div class="lb" data-emo="19"></div><div data-i="i19"><h3>还行 · 15% 到 60%</h3><p>环变橙了，省着点。</p></div></div>
+      <div class="item" data-band="low"><div class="lb" data-emo="12"></div><div data-i="i20"><h3>垮脸 · 不到 15%</h3><p>环变红了，换一家吧，或者等它重置。</p></div></div>
+      <div class="item" data-band="err"><div class="lb" data-emo="34"></div><div data-i="i21"><h3>哭了 · 查不到</h3><p>登录过期、断网、接口改了都会这样。红虚线一直转，卡片里写着怎么修。</p></div></div>
     </div>
   </div>
 
   <div class="real">
     <img src="img/capsule.png" alt="Dango 在 macOS 桌面上的实拍：一条竖向玻璃胶囊，六颗表情球">
     <div class="facts">
-      <div class="fact"><h3><span class="dot" style="background:var(--sage-deep)"></span>这是它真在桌面上的样子</h3>
-        <p>左边是截图。62pt 宽的一条，不抢焦点，平时基本注意不到它。鼠标放上去才滑出卡片：每个额度还剩多少、多久重置、今天烧了多少 token。</p></div>
-      <div class="fact"><h3><span class="dot" style="background:var(--rose-deep)"></span>收起来就是一粒</h3>
-        <p>点顶上那道弧，团子一颗颗缩回去，剩一粒小药丸；再点一下又弹出来。放在哪、收没收起来，下次打开还是那样。</p></div>
-      <div class="fact"><h3><span class="dot" style="background:var(--ok)"></span>Rust 写的原生小件</h3>
-        <p>用 winit 和 Core Animation 直接画，表情球是从 grok-ball 移植过来的。开了省电模式的话平时一动不动，鼠标过去才动。</p></div>
+      <div class="fact"><h3 data-i="i22"><span class="dot" style="background:var(--sage-deep)"></span>这是它真在桌面上的样子</h3>
+        <p data-i="i23">左边是截图。62pt 宽的一条，不抢焦点，平时基本注意不到它。鼠标放上去才滑出卡片：每个额度还剩多少、多久重置、今天烧了多少 token。</p></div>
+      <div class="fact"><h3 data-i="i24"><span class="dot" style="background:var(--rose-deep)"></span>收起来就是一粒</h3>
+        <p data-i="i25">点顶上那道弧，团子一颗颗缩回去，剩一粒小药丸；再点一下又弹出来。放在哪、收没收起来，下次打开还是那样。</p></div>
+      <div class="fact"><h3 data-i="i26"><span class="dot" style="background:var(--ok)"></span>Rust 写的原生小件</h3>
+        <p data-i="i27">用 winit 和 Core Animation 直接画，表情球是从 grok-ball 移植过来的。开了省电模式的话平时一动不动，鼠标过去才动。</p></div>
     </div>
   </div>
 </section>
 
 <!-- ═══════════ 加小球 ═══════════ -->
 <section id="add" class="wrap">
-  <h2>你用哪家，<em>就挂哪颗</em></h2>
-  <p class="sec-sub">第一次打开，它只挂你电脑上装了的那几家。别的去设置里「添加小球」点一下：包月的登录一下就有数，按量付费的贴个 Key。</p>
+  <h2 data-i="i28">你用哪家，<em>就挂哪颗</em></h2>
+  <p class="sec-sub" data-i="i29">第一次打开，它只挂你电脑上装了的那几家。别的去设置里「添加小球」点一下：包月的登录一下就有数，按量付费的贴个 Key。</p>
 
   <div class="grp">
-    <h3>包月的<span>点「登录并添加」，调那家自己的登录</span></h3>
+    <h3 data-i="i30">包月的<span>点「登录并添加」，调那家自己的登录</span></h3>
     <div class="apps">
-      <div class="app"><span class="logo"><img src="img/logos/claude.svg" alt="" loading="lazy"></span><div class="app-t"><b>Claude</b><small>打开 Claude App 登录</small></div></div>
-      <div class="app"><span class="logo"><img src="img/logos/haze.svg" alt="" loading="lazy"></span><div class="app-t"><b>Haze</b><small>打开 Haze App 登录</small></div></div>
-      <div class="app"><span class="logo"><img src="img/logos/cursor.svg" alt="" loading="lazy"></span><div class="app-t"><b>Cursor</b><small>终端里跑 cursor-agent login</small></div></div>
-      <div class="app"><span class="logo"><img src="img/logos/devin.svg" alt="" loading="lazy"></span><div class="app-t"><b>Devin</b><small>终端里跑 devin auth login</small></div></div>
-      <div class="app"><span class="logo"><img src="img/logos/factory.svg" alt="" loading="lazy"></span><div class="app-t"><b>Factory</b><small>打开 Factory App 登录</small></div></div>
-      <div class="app"><span class="logo"><img src="img/logos/dim.png" alt="" loading="lazy"></span><div class="app-t"><b>DimAgent</b><small>打开 DimAgent 登录</small></div></div>
-      <div class="app"><span class="logo"><img src="img/logos/gemini.png" alt="" loading="lazy"></span><div class="app-t"><b>Gemini</b><small>用 Google 账号登录</small></div><em class="tag">要装 Gemini 桥</em></div>
+      <div class="app"><span class="logo"><img src="img/logos/claude.svg" alt="" loading="lazy"></span><div class="app-t"><b>Claude</b><small data-i="i31">打开 Claude App 登录</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/haze.svg" alt="" loading="lazy"></span><div class="app-t"><b>Haze</b><small data-i="i32">打开 Haze App 登录</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/cursor.svg" alt="" loading="lazy"></span><div class="app-t"><b>Cursor</b><small data-i="i33">终端里跑 cursor-agent login</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/devin.svg" alt="" loading="lazy"></span><div class="app-t"><b>Devin</b><small data-i="i34">终端里跑 devin auth login</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/factory.svg" alt="" loading="lazy"></span><div class="app-t"><b>Factory</b><small data-i="i35">打开 Factory App 登录</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/dim.png" alt="" loading="lazy"></span><div class="app-t"><b>DimAgent</b><small data-i="i36">打开 DimAgent 登录</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/gemini.png" alt="" loading="lazy"></span><div class="app-t"><b>Gemini</b><small data-i="i37">用 Google 账号登录</small></div><em class="tag" data-i="i38">要装 Gemini 桥</em></div>
     </div>
-    <p class="grp-note">Dango 不经手登录，只读你登录完留在电脑上的状态，也不会帮你刷新 token。Gemini 的额度来自账号池桥，下载的 App 里不带，要从源码另装。</p>
+    <p class="grp-note" data-i="i39">Dango 不经手登录，只读你登录完留在电脑上的状态，也不会帮你刷新 token。Gemini 的额度来自账号池桥，下载的 App 里不带，要从源码另装。</p>
   </div>
 
   <div class="grp">
-    <h3>按量付费的<span>贴个 API Key，看余额</span></h3>
+    <h3 data-i="i40">按量付费的<span>贴个 API Key，看余额</span></h3>
     <div class="apps">
-      <div class="app"><span class="logo"><img src="img/logos/deepseek.svg" alt="" loading="lazy"></span><div class="app-t"><b>DeepSeek</b><small>余额 · 元</small></div></div>
-      <div class="app"><span class="logo"><img src="img/logos/kimi.png" alt="" loading="lazy"></span><div class="app-t"><b>Kimi</b><small>余额 · 元</small></div></div>
-      <div class="app"><span class="logo"><img src="img/logos/stepfun.svg" alt="" loading="lazy"></span><div class="app-t"><b>阶跃星辰</b><small>余额 · 元</small></div></div>
-      <div class="app"><span class="logo"><img src="img/logos/openrouter.png" alt="" loading="lazy"></span><div class="app-t"><b>OpenRouter</b><small>剩余额度 · 美元</small></div></div>
-      <div class="app"><span class="logo"><img src="img/logos/siliconflow.png" alt="" loading="lazy"></span><div class="app-t"><b>硅基流动</b><small>余额 · 元</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/deepseek.svg" alt="" loading="lazy"></span><div class="app-t"><b>DeepSeek</b><small data-i="bal">余额 · 元</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/kimi.png" alt="" loading="lazy"></span><div class="app-t"><b>Kimi</b><small data-i="bal">余额 · 元</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/stepfun.svg" alt="" loading="lazy"></span><div class="app-t"><b data-i="i41">阶跃星辰</b><small data-i="bal">余额 · 元</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/openrouter.png" alt="" loading="lazy"></span><div class="app-t"><b>OpenRouter</b><small data-i="i43">剩余额度 · 美元</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/siliconflow.png" alt="" loading="lazy"></span><div class="app-t"><b data-i="i42">硅基流动</b><small data-i="bal">余额 · 元</small></div></div>
     </div>
-    <p class="grp-note">Key 存在 Mac 钥匙串里，只发给那一家的官方余额接口。填个预算，就能按余额占预算画出一圈环。</p>
+    <p class="grp-note" data-i="i44">Key 存在 Mac 钥匙串里，只发给那一家的官方余额接口。填个预算，就能按余额占预算画出一圈环。</p>
   </div>
 </section>
 
 <!-- ═══════════ Token ═══════════ -->
 <section id="tokens" class="wrap">
-  <h2>顺手还记了本 <em>Token 账</em></h2>
-  <p class="sec-sub">设置里能看到每天烧了多少、哪个工具在烧、烧在哪个模型上、缓存命中了多少。</p>
+  <h2 data-i="i45">顺手还记了本 <em>Token 账</em></h2>
+  <p class="sec-sub" data-i="i46">设置里能看到每天烧了多少、哪个工具在烧、烧在哪个模型上、缓存命中了多少。</p>
 
   <div class="tok">
     <div class="tok-head">
-      <div class="tok-num num" id="tokTotal">—<small>近 14 天</small></div>
+      <div class="tok-num num" id="tokTotal" data-i="i47">—<small>近 14 天</small></div>
       <div class="tok-stats" id="tokStats"></div>
     </div>
     <div class="tok-grid">
       <div class="tok-panel">
-        <h3>每天<span class="demo-tag">示意数据</span></h3>
+        <h3 data-i="i48">每天<span class="demo-tag">示意数据</span></h3>
         <svg class="chart" id="chart" viewBox="0 0 520 170" role="img" aria-label="示意图：近 14 天每日 token 用量，按 Claude Code、Factory、Cursor、Devin 分色堆叠"></svg>
         <div class="chart-legend" id="legendTok"></div>
       </div>
       <div class="tok-panel">
-        <h3>按模型</h3>
+        <h3 data-i="i49">按模型</h3>
         <div class="models" id="models"></div>
       </div>
     </div>
   </div>
 
   <div class="tok-notes facts">
-    <div class="fact"><h3><span class="dot" style="background:var(--sage-deep)"></span>读本机记录</h3>
-      <p>Claude Code 和 Factory 读会话日志，Devin 读它自己的会话库。都是只读打开，不会动你的文件。</p></div>
-    <div class="fact"><h3><span class="dot" style="background:var(--sage-deep)"></span>Cursor 走官方明细</h3>
-      <p>Cursor 的数来自它自己的用量明细，App 和命令行都算，五分钟同步一次，第一次往回补 30 天。</p></div>
-    <div class="fact"><h3><span class="dot" style="background:var(--sage-deep)"></span>记在付钱的那家头上</h3>
-      <p>一个工具接了好几家模型的话，按当时的配置找到真正扣钱的那个套餐，记到它名下。</p></div>
+    <div class="fact"><h3 data-i="i50"><span class="dot" style="background:var(--sage-deep)"></span>读本机记录</h3>
+      <p data-i="i51">Claude Code 和 Factory 读会话日志，Devin 读它自己的会话库。都是只读打开，不会动你的文件。</p></div>
+    <div class="fact"><h3 data-i="i52"><span class="dot" style="background:var(--sage-deep)"></span>Cursor 走官方明细</h3>
+      <p data-i="i53">Cursor 的数来自它自己的用量明细，App 和命令行都算，五分钟同步一次，第一次往回补 30 天。</p></div>
+    <div class="fact"><h3 data-i="i54"><span class="dot" style="background:var(--sage-deep)"></span>记在付钱的那家头上</h3>
+      <p data-i="i55">一个工具接了好几家模型的话，按当时的配置找到真正扣钱的那个套餐，记到它名下。</p></div>
   </div>
 </section>
 
 <!-- ═══════════ 诚实 ═══════════ -->
 <section id="honest" class="wrap">
-  <h2>它只看，<em>不碰你的账号</em></h2>
+  <h2 data-i="i56">它只看，<em>不碰你的账号</em></h2>
   <div class="rules">
-    <div class="rule"><h3>登录状态只读</h3><p>各家 App 的登录状态只读不写，也不会帮你刷新 token，免得把你正在用的 App 挤下线。</p></div>
-    <div class="rule"><h3>Key 只放钥匙串</h3><p>你贴进来的 token 和 API Key 放在 Mac 钥匙串里 Dango 自己那格，不写文件、不进日志、也不回传给页面。</p></div>
-    <div class="rule"><h3>挂了就说挂了</h3><p>查不到就哭，顺便告诉你怎么修。不会拿之前的旧数字顶上，也不会瞎编一个百分比。</p></div>
-    <div class="rule"><h3>只连该连的</h3><p>查额度只找各家自己的接口。本地控制接口只听 127.0.0.1，别的网页发来的请求直接拒掉。</p></div>
+    <div class="rule" data-i="i57"><h3>登录状态只读</h3><p>各家 App 的登录状态只读不写，也不会帮你刷新 token，免得把你正在用的 App 挤下线。</p></div>
+    <div class="rule" data-i="i58"><h3>Key 只放钥匙串</h3><p>你贴进来的 token 和 API Key 放在 Mac 钥匙串里 Dango 自己那格，不写文件、不进日志、也不回传给页面。</p></div>
+    <div class="rule" data-i="i59"><h3>挂了就说挂了</h3><p>查不到就哭，顺便告诉你怎么修。不会拿之前的旧数字顶上，也不会瞎编一个百分比。</p></div>
+    <div class="rule" data-i="i60"><h3>只连该连的</h3><p>查额度只找各家自己的接口。本地控制接口只听 127.0.0.1，别的网页发来的请求直接拒掉。</p></div>
   </div>
 </section>
 
 <!-- ═══════════ 开源 ═══════════ -->
 <section id="oss" class="wrap">
-  <h2>下下来，<em>拖进应用程序就能用</em></h2>
-  <p class="sec-sub">Apple Silicon 的 Mac，macOS 13 以上。免费，代码在 <a href="https://github.com/Jules-0409/dango">GitHub</a>（MIT）。</p>
+  <h2 data-i="i61">下下来，<em>拖进应用程序就能用</em></h2>
+  <p class="sec-sub" data-i="i62">Apple Silicon 的 Mac，macOS 13 以上。免费，代码在 <a href="https://github.com/Jules-0409/dango">GitHub</a>（MIT）。</p>
   <div class="oss">
     <div class="dl">
       <div class="dl-btns">
-        <a class="btn btn-primary" href="download/Dango-0.1.1-macos-arm64.zip" download>下载 Dango 0.1.1 · 4.9 MB</a>
-        <a class="btn btn-ghost" href="https://github.com/Jules-0409/dango/releases/latest">去 GitHub 下 ↗</a>
+        <a class="btn btn-primary" href="download/Dango-0.1.1-macos-arm64.zip" download data-i="i63">下载 Dango 0.1.1 · 4.9 MB</a>
+        <a class="btn btn-ghost" href="https://github.com/Jules-0409/dango/releases/latest" data-i="i64">去 GitHub 下 ↗</a>
       </div>
       <ol class="steps">
-        <li>解压，把 <b>Dango.app</b> 拖进「应用程序」。</li>
-        <li>第一次打开会被系统拦下来：我没交苹果的开发者年费，做不了公证。去「系统设置 → 隐私与安全性」往下拉，点「仍要打开」就好。</li>
-        <li>想开机自己启动的话：系统设置 → 通用 → 登录项，把 Dango 加进去。</li>
+        <li data-i="i65">解压，把 <b>Dango.app</b> 拖进「应用程序」。</li>
+        <li data-i="i66">第一次打开会被系统拦下来：我没交苹果的开发者年费，做不了公证。去「系统设置 → 隐私与安全性」往下拉，点「仍要打开」就好。</li>
+        <li data-i="i67">想开机自己启动的话：系统设置 → 通用 → 登录项，把 Dango 加进去。</li>
       </ol>
     </div>
     <div class="req">
-      <div><b>设置</b>　点程序坞里的 Dango，或菜单栏图标 →「设置…」：排顺序、换形状颜色、加球、看 Token 账。关掉设置，程序坞图标就收起来</div>
-      <div><b>有数</b>　想让哪颗球有数，就装上那家的 App 或命令行并登录</div>
-      <div><b>源码</b>　<a href="https://github.com/Jules-0409/dango">github.com/Jules-0409/dango</a>，装好 Rust 以后 <code>cargo build --release</code>。有问题提 issue，想给你常用的那家做颗新球，欢迎发 PR</div>
+      <div data-i="i68"><b>设置</b>　点程序坞里的 Dango，或菜单栏图标 →「设置…」：排顺序、换形状颜色、加球、看 Token 账。关掉设置，程序坞图标就收起来</div>
+      <div data-i="i69"><b>有数</b>　想让哪颗球有数，就装上那家的 App 或命令行并登录</div>
+      <div data-i="i70"><b>源码</b>　<a href="https://github.com/Jules-0409/dango">github.com/Jules-0409/dango</a>，装好 Rust 以后 <code>cargo build --release</code>。有问题提 issue，想给你常用的那家做颗新球，欢迎发 PR</div>
     </div>
   </div>
 </section>
 </main>
 
 <footer class="wrap">
-  <div class="by">DANGO · 额度团子 · <a href="https://www.liujufu.com">liujufu.com</a> · 表情球来自 <a href="https://github.com/tycoding/grok-ball">tycoding/grok-ball</a>（MIT）</div>
+  <div class="by" data-i="i71">DANGO · 额度团子 · <a href="https://www.liujufu.com">liujufu.com</a> · 表情球来自 <a href="https://github.com/tycoding/grok-ball">tycoding/grok-ball</a>（MIT）</div>
 </footer>
 
 <script src="grok-ball.js"></script>
@@ -584,6 +590,28 @@
 
 (function(){
   'use strict';
+  // ── 中英切换：默认跟浏览器，选过就记住；切换时刷新，脚本生成的文字也跟着换 ──
+  const LANG = (() => {
+    const q = new URLSearchParams(location.search).get('lang');
+    if (q === 'en' || q === 'zh') return q;
+    try { const saved = localStorage.getItem('dango-lang'); if (saved) return saved; } catch (_) {}
+    return /^zh/i.test(navigator.language || '') ? 'zh' : 'en';
+  })();
+  const L = (zh, en) => LANG === 'en' ? en : zh;
+  const EN = {"bal": "Balance · CNY", "i0": "Faces", "i1": "Services", "i2": "Download", "i3": "Home ↗", "i4": "A quota widget for your Mac", "i5": "\n        I pay for several AI coding plans, and I kept running out halfway through a task.\n        So I made a stack of dango for the edge of my screen, one per plan. <b>Plenty left, it smiles.</b> Running low, it sulks. Can't fetch the numbers, it cries.\n      ", "i6": "Download for Mac ↓", "i7": "<b>Dango</b><span>File</span><span>Edit</span><span>View</span>", "i8": "Drag it · hover for details · poke it · click the top arc to fold", "i9": "<span class=\"t\">Ring</span>", "i10": "Refresh", "i11": "Cursor quota resets", "i12": "Factory breaks", "i13": "Lights off", "i14": "Skip the numbers,<br><em>read the face</em>", "i15": "The ring is what's left; the face is how it feels about it. Drag the slider to spend some quota, or poke it a few times.", "i16": "Break it", "i17": "Refill", "i18": "<h3>Happy · 60% or more</h3><p>Go wild.</p>", "i19": "<h3>Meh · 15% to 60%</h3><p>The ring turns orange. Pace yourself.</p>", "i20": "<h3>Sulking · under 15%</h3><p>The ring turns red. Switch plans, or wait for the reset.</p>", "i21": "<h3>Crying · can't fetch</h3><p>Expired login, no network, or the API changed. The dashed red ring keeps spinning, and the card tells you how to fix it.</p>", "i22": "<span class=\"dot\" style=\"background:var(--sage-deep)\"></span>What it really looks like", "i23": "That's a real screenshot. A 62pt-wide strip that never steals focus; most of the time you won't notice it. Hover and a card slides out: every quota window, when it resets, and how many tokens you burned today.", "i24": "<span class=\"dot\" style=\"background:var(--rose-deep)\"></span>Folds into a pill", "i25": "Click the arc on top and the dango tuck away one by one into a small pill. Click again and they pop back. It remembers where you put it and whether it was folded.", "i26": "<span class=\"dot\" style=\"background:var(--ok)\"></span>Native, written in Rust", "i27": "Drawn with winit and Core Animation; the faces are a port of grok-ball. In power-saving mode it sits still until your pointer comes near.", "i28": "One ball for <em>every plan you use</em>", "i29": "On first launch it only shows the services installed on your Mac. Add more under Settings → Add a ball: subscriptions just need a login, pay-as-you-go ones need an API key.", "i30": "Subscriptions<span>\"Log in and add\" opens that vendor's own login</span>", "i31": "Log in in the Claude app", "i32": "Log in in the Haze app", "i33": "Runs cursor-agent login", "i34": "Runs devin auth login", "i35": "Log in in the Factory app", "i36": "Log in in DimAgent", "i37": "Sign in with Google", "i38": "Needs bridge", "i39": "Dango never handles the login itself. It only reads what the app left on your Mac after you logged in, and it never refreshes your tokens. Gemini quota comes from the account-pool bridge, which isn't in the download; build it from source.", "i40": "Pay-as-you-go<span>Paste an API key to see the balance</span>", "i41": "StepFun", "i42": "SiliconFlow", "i43": "Credits · USD", "i44": "Keys live in the macOS Keychain and are only sent to that vendor's own balance endpoint. Set a budget and the ring shows what's left of it.", "i45": "And a <em>token ledger</em>", "i46": "Settings shows how many tokens you burned each day, which tool burned them, on which model, and how much the cache saved.", "i47": "—<small>last 14 days</small>", "i48": "Per day<span class=\"demo-tag\">SAMPLE DATA</span>", "i49": "Per model", "i50": "<span class=\"dot\" style=\"background:var(--sage-deep)\"></span>Local records only", "i51": "Claude Code and Factory from their session logs; Devin and DimAgent from their own session databases. Everything is opened read-only.", "i52": "<span class=\"dot\" style=\"background:var(--sage-deep)\"></span>Cursor's own usage history", "i53": "Cursor numbers come from its own usage history, app and CLI alike. Synced every five minutes, with 30 days backfilled the first time.", "i54": "<span class=\"dot\" style=\"background:var(--sage-deep)\"></span>Booked to whoever pays", "i55": "When one tool talks to several providers, each run is booked to the plan that was actually charged.", "i56": "It looks, <em>never touches</em>", "i57": "<h3>Logins are read-only</h3><p>Other apps' logins are read, never written, and tokens are never refreshed, so the apps you're using don't get signed out.</p>", "i58": "<h3>Keys stay in the Keychain</h3><p>Tokens and API keys you paste go into Dango's own Keychain entry: never written to files, never logged, never sent back to the page.</p>", "i59": "<h3>Broken means broken</h3><p>If it can't fetch, it cries and tells you how to fix it. No stale numbers, no made-up percentages.</p>", "i60": "<h3>Talks only to who it should</h3><p>Quota checks go to each vendor's own API. The local control API only listens on 127.0.0.1 and rejects requests from other web pages.</p>", "i61": "Download, <em>drag to Applications</em>", "i62": "Apple Silicon Macs, macOS 13 or later. Free, with the code on <a href=\"https://github.com/Jules-0409/dango\">GitHub</a> (MIT).", "i63": "Download Dango 0.1.1 · 4.9 MB", "i64": "Get it on GitHub ↗", "i65": "Unzip and drag <b>Dango.app</b> into Applications.", "i66": "macOS blocks the first launch because the app isn't notarized (no paid Apple developer account). Open System Settings → Privacy &amp; Security, scroll down, and click Open Anyway.", "i67": "To start it with your Mac, add Dango under System Settings → General → Login Items.", "i68": "<b>Settings</b>　Click Dango in the Dock, or the menu bar icon → Settings…: reorder, restyle, add balls, see the token ledger. Close settings and the Dock icon goes away", "i69": "<b>Data</b>　For a ball to show numbers, install that vendor's app or CLI and log in", "i70": "<b>Source</b>　<a href=\"https://github.com/Jules-0409/dango\">github.com/Jules-0409/dango</a>. With Rust installed, <code>cargo build --release</code>. Issues welcome, and PRs for new balls even more so", "i71": "DANGO · <a href=\"https://www.liujufu.com\">liujufu.com</a> · faces by <a href=\"https://github.com/tycoding/grok-ball\">tycoding/grok-ball</a> (MIT)", "cn": "quota dango"};
+  if (LANG === 'en') {
+    document.documentElement.lang = 'en';
+    document.title = 'Dango — your AI quotas as little faces';
+    document.querySelectorAll('[data-i]').forEach(el => { const t = EN[el.dataset.i]; if (t != null) el.innerHTML = t; });
+  }
+  const langBtn = document.getElementById('langBtn');
+  langBtn.textContent = LANG === 'en' ? '中' : 'EN';
+  langBtn.addEventListener('click', () => {
+    const next = LANG === 'en' ? 'zh' : 'en';
+    try { localStorage.setItem('dango-lang', next); } catch (_) {}
+    const u = new URL(location.href); u.searchParams.delete('lang');
+    if (u.href === location.href) location.reload(); else location.replace(u.href);
+  });
   const EYE = '#F5F2ED';
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -647,23 +675,23 @@
 
   /* ── 演示桌面：和小件同一套规则（theme.rs::ring_style / emotion_for） ── */
   const PLANS = [
-    { id:'claude', name:'Claude', sub:'Max 套餐', shape:'star', color:'#E7A97C', p:64, inner:64, today:'1.9M',
-      pools:[{ rows:[['5 小时',64],['本周',81]] }] },
-    { id:'haze', name:'Haze', sub:'Pro · 周额度', shape:'blob', color:'#D8A7A0', p:83, inner:100, today:'2.1M',
-      pools:[{ rows:[['周',83],['5 小时',100]] }] },
-    { id:'antigravity', name:'Gemini', sub:'周额度 · 4 天后重置', shape:'gem', color:'#8FB5D9', p:70, inner:100, today:'2.4M',
-      pools:[{ name:'Gemini', rows:[['周',70],['5 小时',100]] }, { name:'Claude & GPT', rows:[['周',100],['5 小时',100]] }] },
-    { id:'devin', name:'Devin', sub:'Pro · 每日', shape:'wedge', color:'#A8C6A2', p:100, inner:null, today:'3.1M',
-      pools:[{ rows:[['每日',100],['每周',null]] }] },
-    { id:'cursor', name:'Cursor', sub:'Pro · 总额度', shape:'blob', color:'#C9BCA6', p:11, inner:13, today:'820K',
-      pools:[{ rows:[['总额度',11],['Fast',13],['Auto',64]] }] },
-    { id:'factory', name:'Factory', sub:'core 池', shape:'wedge', color:'#B8A9C9', p:38, inner:100, today:'640K',
-      pools:[{ name:'standard', rows:[['5 小时',100],['周',0],['月',52]] }, { name:'core', rows:[['5 小时',100],['周',38],['月',61]] }] },
-    { id:'dim', name:'DimAgent', sub:'Lite套餐 · 点数', shape:'cloud', color:'#DCB770', p:37, inner:null, today:'1.2M',
-      pools:[{ rows:[['点数',37],['联网搜索',84]] }] },
+    { id:'claude', name:'Claude', sub:L('Max 套餐','Max plan'), shape:'star', color:'#E7A97C', p:64, inner:64, today:'1.9M',
+      pools:[{ rows:[[L('5 小时','5h'),64],[L('本周','Week'),81]] }] },
+    { id:'haze', name:'Haze', sub:L('Pro · 周额度','Pro · weekly'), shape:'blob', color:'#D8A7A0', p:83, inner:100, today:'2.1M',
+      pools:[{ rows:[[L('周','Week'),83],[L('5 小时','5h'),100]] }] },
+    { id:'antigravity', name:'Gemini', sub:L('周额度 · 4 天后重置','Weekly · resets in 4 days'), shape:'gem', color:'#8FB5D9', p:70, inner:100, today:'2.4M',
+      pools:[{ name:'Gemini', rows:[[L('周','Week'),70],[L('5 小时','5h'),100]] }, { name:'Claude & GPT', rows:[[L('周','Week'),100],[L('5 小时','5h'),100]] }] },
+    { id:'devin', name:'Devin', sub:L('Pro · 每日','Pro · daily'), shape:'wedge', color:'#A8C6A2', p:100, inner:null, today:'3.1M',
+      pools:[{ rows:[[L('每日','Day'),100],[L('每周','Week'),null]] }] },
+    { id:'cursor', name:'Cursor', sub:L('Pro · 总额度','Pro · total'), shape:'blob', color:'#C9BCA6', p:11, inner:13, today:'820K',
+      pools:[{ rows:[[L('总额度','Total'),11],['Fast',13],['Auto',64]] }] },
+    { id:'factory', name:'Factory', sub:L('core 池','core pool'), shape:'wedge', color:'#B8A9C9', p:38, inner:100, today:'640K',
+      pools:[{ name:'standard', rows:[[L('5 小时','5h'),100],[L('周','Week'),0],[L('月','Month'),52]] }, { name:'core', rows:[[L('5 小时','5h'),100],[L('周','Week'),38],[L('月','Month'),61]] }] },
+    { id:'dim', name:'DimAgent', sub:L('Lite套餐 · 点数','Lite plan · credits'), shape:'cloud', color:'#DCB770', p:37, inner:null, today:'1.2M',
+      pools:[{ rows:[[L('点数','Credits'),37],[L('联网搜索','Web search'),84]] }] },
   ];
   const HEAD = Object.fromEntries(PLANS.map(x => [x.id, x.p]));
-  const MODES = [['plain','细环'],['beads','珠串'],['double','双环'],['flow','流光'],['segments','分段'],['trail','尾迹']];
+  const MODES = [['plain',L('细环','Thin')],['beads',L('珠串','Beads')],['double',L('双环','Double')],['flow',L('流光','Flow')],['segments',L('分段','Segments')],['trail',L('尾迹','Trail')]];
   const DANGER = 'var(--d-danger)', WARN = 'var(--d-warn)';
   const moodOf = (st) => st.err ? '34' : st.sleep ? '00' : emotionFor({ ok:true, pct:st.p });
   const pctTxt = v => v == null ? '—' : Math.round(v);
@@ -753,7 +781,7 @@
   PLANS.forEach((pl, i) => {
     const slot = document.createElement('div');
     slot.className = 'slot'; slot.dataset.id = pl.id; slot.tabIndex = 0;
-    slot.setAttribute('role', 'listitem'); slot.setAttribute('aria-label', pl.name + ' 剩余 ' + pl.p + '%');
+    slot.setAttribute('role', 'listitem'); slot.setAttribute('aria-label', pl.name + L(' 剩余 ',' remaining ') + pl.p + '%');
     slot.innerHTML = '<svg class="ring" viewBox="0 0 58 58" aria-hidden="true"></svg><div class="ball"></div><span class="zz">z</span>';
     list.appendChild(slot);
     const st = state[pl.id] = { p:pl.p, err:false, sleep:false, slot, ring:slot.querySelector('.ring') };
@@ -792,7 +820,7 @@
     }
     setTimeout(() => slots.forEach(sl => sl.style.transitionDelay = ''), 900);
     tweenGrip(f ? 1 : 0);
-    $('#grip').setAttribute('aria-label', f ? '展开胶囊' : '收起胶囊');
+    $('#grip').setAttribute('aria-label', f ? L('展开胶囊','Unfold') : L('收起胶囊','Fold'));
   }
 
   // 详情卡
@@ -807,10 +835,10 @@
     const pools = pl.pools.map(po => `<div class="pool">${po.name ? `<div class="pool-name">${po.name}</div>` : ''}${
       po.rows.map(r => rowHTML(full ? [r[0], 100] : r, pl.color)).join('')}</div>`).join('');
     $('#cardBody').innerHTML = `
-      <div class="c-head"><div class="mini"></div><div class="c-title"><b>${pl.name}</b><span>${st.err ? '查不到' : pl.sub}</span></div>
+      <div class="c-head"><div class="mini"></div><div class="c-title"><b>${pl.name}</b><span>${st.err ? L('查不到',"Can't fetch") : pl.sub}</span></div>
         ${st.err ? '' : `<div class="c-big">${pctTxt(st.p)}<small>%</small></div>`}</div>
-      ${st.err ? '<div class="c-err">登录过期了，终端里跑一下 droid 重新登录就好<code>http 401 · 最后成功 12 分钟前</code></div>' : pools}
-      <div class="c-foot"><span>今日 ${pl.today} token</span><span>1 分钟前更新</span></div>`;
+      ${st.err ? L('<div class="c-err">登录过期了，终端里跑一下 droid 重新登录就好<code>http 401 · 最后成功 12 分钟前</code></div>','<div class="c-err">Login expired. Run droid in a terminal to sign in again.<code>http 401 · last ok 12 min ago</code></div>') : pools}
+      <div class="c-foot"><span>${L('今日 ' + pl.today + ' token', 'Today ' + pl.today + ' tokens')}</span><span>${L('1 分钟前更新','updated 1 min ago')}</span></div>`;
     if (miniBall && miniBall.destroy) miniBall.destroy();
     miniBall = ball(card.querySelector('.mini'), { emotion:moodOf(st), shape:pl.shape, color:pl.color, eyeScale:1.15, lite:true });
     place(id);
@@ -939,14 +967,14 @@
   };
   $('#bReset').onclick = e => {
     const st = state.cursor, on = e.currentTarget.classList.toggle('on');
-    e.currentTarget.textContent = on ? 'Cursor 再花掉点' : 'Cursor 额度回来了';
+    e.currentTarget.textContent = on ? L('Cursor 再花掉点','Spend some Cursor') : L('Cursor 额度回来了','Cursor quota resets');
     if (on){ st.p = 100; if (st.ball){ st.ball.setEmotion('33'); st.ball.burst(36); st.ball.spin(1); } renderRing('cursor'); setTimeout(() => paint('cursor'), 1400); }
     else { st.p = HEAD.cursor; paint('cursor'); }
     refreshCard('cursor');
   };
   $('#bErr').onclick = e => {
     const st = state.factory, on = e.currentTarget.classList.toggle('on');
-    e.currentTarget.textContent = on ? 'Factory 好了' : 'Factory 挂了';
+    e.currentTarget.textContent = on ? L('Factory 好了','Factory is back') : L('Factory 挂了','Factory breaks');
     st.err = on; paint('factory'); if (!on && st.ball) st.ball.bounce();
     refreshCard('factory');
   };
@@ -980,11 +1008,11 @@
     } else if (!broken && ants) ants.remove();
     bigArc.style.strokeDashoffset = BC * (1 - p.pct / 100);
     bigArc.setAttribute('stroke', ringColor(p));
-    read.innerHTML = broken ? '<b>查不到</b>http 401 · 登录过期' : '<b>' + p.pct + '%</b>还剩';
+    read.innerHTML = broken ? L('<b>查不到</b>http 401 · 登录过期',"<b>Can't fetch</b>http 401 · login expired") : '<b>' + p.pct + '%</b>' + L('还剩','left');
     range.disabled = broken;
     const b = band(p);
     items.forEach(it => it.classList.toggle('now', it.dataset.band === b));
-    document.getElementById('breakBtn').textContent = broken ? '修好它' : '弄挂它';
+    document.getElementById('breakBtn').textContent = broken ? L('修好它','Fix it') : L('弄挂它','Break it');
   }
   range.addEventListener('input', renderMood);
   bigSlot.addEventListener('click', () => {
@@ -1007,10 +1035,10 @@
     ['Devin',       '#A8C6A2', [0.0,0.3,0.6,0.9,0.4,0.2,0.8,1.1,0.5,0.0,0.7,1.2,0.9,1.4]],
   ];
   const MODELS = [
-    ['claude-opus-5-5',    'Claude 订阅',   '#E7A97C', 18.4, 96],
-    ['swe-2-max',          'Devin 订阅',    '#A8C6A2', 9.0,  93],
-    ['cursor-grok-4.6',    'Cursor 订阅',   '#C9BCA6', 6.3,  91],
-    ['gemini-3.8-flash',   'Gemini 账号池', '#B8A9C9', 6.2,  48],
+    ['claude-opus-5-5',    L('Claude 订阅','Claude plan'),   '#E7A97C', 18.4, 96],
+    ['swe-2-max',          L('Devin 订阅','Devin plan'),    '#A8C6A2', 9.0,  93],
+    ['cursor-grok-4.6',    L('Cursor 订阅','Cursor plan'),   '#C9BCA6', 6.3,  91],
+    ['gemini-3.8-flash',   L('Gemini 账号池','Gemini pool'), '#B8A9C9', 6.2,  48],
     ['deepseek-v4',        'DeepSeek API',  '#B8A9C9', 3.1,  81],
   ];
   const fmt = v => v >= 10 ? v.toFixed(1) + 'M' : v.toFixed(2) + 'M';
@@ -1019,7 +1047,7 @@
   const sum = totals.reduce((a, b) => a + b, 0);
   document.getElementById('tokTotal').firstChild.nodeValue = fmt(sum);
   document.getElementById('tokStats').innerHTML =
-    '<span>今天 <b>' + fmt(totals[days - 1]) + '</b></span><span>缓存命中 <b>88%</b></span><span>有用量 <b>' + days + '/' + days + '</b> 天</span>';
+    L('<span>今天 <b>','<span>Today <b>') + fmt(totals[days - 1]) + L('</b></span><span>缓存命中 <b>88%</b></span><span>有用量 <b>','</b></span><span>Cache hit <b>88%</b></span><span>Active <b>') + days + '/' + days + L('</b> 天</span>','</b> days</span>');
   document.getElementById('legendTok').innerHTML = SRC.map(([n, c, v]) => {
     const t = v.reduce((a, b) => a + b, 0);
     return '<span><i class="dot7" style="background:' + c + '"></i>' + n + '<b>' + fmt(t) + '</b><em>' + Math.round(t / sum * 100) + '%</em></span>';

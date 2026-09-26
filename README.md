@@ -10,7 +10,7 @@
 
 I pay for several AI coding plans at once, and I kept finding out a plan was empty halfway through a task. So I made Dango: a thin glass capsule that sits on the side of the screen, one ball per plan. When there's plenty left the ball smiles, when it's running low it sulks, and when Dango can't fetch the numbers it cries instead of showing you stale ones.
 
-![Dango on the desktop](site/img/capsule.png)
+<p align="center"><img src="site/img/demo.gif" width="480" alt="Hover a ball for its card, poke it five times for confetti"></p>
 
 ## Download
 
