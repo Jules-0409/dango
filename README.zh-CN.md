@@ -44,11 +44,11 @@
 
 ## 能看哪些
 
-**包月的**：Claude、Haze、Cursor、Devin、Factory、Gemini / Antigravity。Dango 读各家 App 或命令行留在你电脑上的登录状态。设置 →「添加小球」里点「登录并添加」，会打开那家自己的登录，Dango 不经手登录。第一次打开时，只挂你电脑上装了的那几家。
+**包月的**：Claude、Haze、Cursor、Devin、Factory、DimAgent、Gemini / Antigravity。Dango 读各家 App 或命令行留在你电脑上的登录状态。设置 →「添加小球」里点「登录并添加」，会打开那家自己的登录，Dango 不经手登录。第一次打开时，只挂你电脑上装了的那几家。
 
 **按量付费的余额**：DeepSeek、Kimi、阶跃星辰、OpenRouter、硅基流动。贴上 API Key，它去那家官方的余额接口查；想要一圈环的话填个预算。
 
-**Token 账**：设置里有一页，按天、按模型把本机记录加起来：Claude Code 的会话日志、Factory 的会话、Devin 本机的会话库、Cursor 自己的用量明细。都在本机只读。
+**Token 账**：设置里有一页，按天、按模型把本机记录加起来：Claude Code 的会话日志、Factory 的会话、Devin 和 DimAgent 本机的会话库、Cursor 自己的用量明细。都在本机只读。
 
 Gemini 那颗球要配合可选的 Gemini 桥（`dango-bridge`，见下面），下载的 App 里不带它。
 

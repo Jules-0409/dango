@@ -14,6 +14,10 @@
 //!   chain node carries `metadata.metrics` with real per-inference
 //!   input/output/cache token counts and the model id. Rows are append-only
 //!   (AUTOINCREMENT `row_id`), so the scan cursor is just the last row seen.
+//! - **DimAgent** — `~/.dimcode/v2/dimcode.sqlite`, table `usage_ledger`: one
+//!   append-only row per agent run with `promptTokens` (cache reads included),
+//!   `completionTokens`, `cacheReadTokens`. The paying end comes from the
+//!   run's provider: DimAgent's own OAuth plan, or a custom provider's base URL.
 //!
 //! The ledger persists to `tokens.json` next to `settings.json`, so history
 //! survives the tools pruning their logs. Files are read incrementally from
@@ -34,6 +38,9 @@ pub const SOURCE_CLAUDE_CODE: &str = "claude-code";
 pub const SOURCE_FACTORY: &str = "factory";
 pub const SOURCE_CURSOR: &str = "cursor";
 pub const SOURCE_DEVIN: &str = "devin";
+pub const SOURCE_DIM: &str = "dim";
+/// DimAgent's built-in provider id for its own subscription.
+const DIM_OWN_PROVIDER: &str = "dimcode-api-oauth";
 /// Route id prefix of local ports whose tokens are not kept: retired
 /// proxies outside [`crate::ports`], and the Cursor Agent bridge.
 const RETIRED_PREFIX: &str = "local:";
@@ -146,6 +153,20 @@ pub struct Ledger {
     /// `sessions.db` (each assistant chain node carries `metadata.metrics`).
     #[serde(default)]
     devin: DevinLedger,
+    /// DimAgent's `usage_ledger` rows, booked per day under `route\u{1f}model`.
+    #[serde(default)]
+    dim: DimLedger,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct DimLedger {
+    /// usage_ledger is append-only, so the highest rowid seen is the cursor.
+    last_rowid: i64,
+    /// date → `route id\u{1f}model` → counts.
+    days: DayModelCounts,
+    /// Route id → route, as resolved when the row was booked.
+    routes: BTreeMap<String, Route>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -308,6 +329,7 @@ impl Ledger {
             self.scan_claude_code(&claude_roots),
             self.scan_factory(&home.join(".factory").join("sessions")),
             self.scan_devin(&home.join(".local/share/devin/cli/sessions.db")),
+            self.scan_dim(&home.join(".dimcode/v2/dimcode.sqlite")),
             self.scan_proxy_logs(
                 "proxy:gemini",
                 "Gemini 桥",
@@ -526,6 +548,123 @@ impl Ledger {
         Ok(scanned)
     }
 
+    fn scan_dim(&mut self, db_path: &Path) -> SourceStatus {
+        let mut status = SourceStatus {
+            id: SOURCE_DIM.into(),
+            label: "DimAgent".into(),
+            found: db_path.is_file(),
+            files: 0,
+            error: None,
+        };
+        if !status.found {
+            return status;
+        }
+        match self.scan_dim_db(db_path) {
+            Ok(rows) => status.files = rows,
+            Err(error) => status.error = Some(error),
+        }
+        status
+    }
+
+    fn scan_dim_db(&mut self, db_path: &Path) -> Result<usize, String> {
+        let conn = crate::probes::credentials::open_vscdb_readonly(db_path)?;
+        // Base URL per provider (never the credential column).
+        let mut urls: BTreeMap<String, String> = BTreeMap::new();
+        if let Ok(mut stmt) =
+            conn.prepare("SELECT providerId, coalesce(baseUrl, defaultBaseUrl) FROM providers")
+        {
+            if let Ok(rows) = stmt.query_map([], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, Option<String>>(1)?))
+            }) {
+                for (id, url) in rows.flatten() {
+                    if let Some(url) = url {
+                        urls.insert(id, url);
+                    }
+                }
+            }
+        }
+        let mut stmt = conn
+            .prepare(
+                "SELECT rowid, providerId, modelId, createdAt,
+                        json_extract(usage, '$.promptTokens'),
+                        json_extract(usage, '$.completionTokens'),
+                        json_extract(usage, '$.cacheReadTokens'),
+                        json_extract(usage, '$.cacheWriteTokens')
+                 FROM usage_ledger
+                 WHERE rowid > ?1
+                 ORDER BY rowid",
+            )
+            .map_err(|error| format!("dim.prepare: {error}"))?;
+        let rows = stmt
+            .query_map([self.dim.last_rowid], |row| {
+                Ok((
+                    row.get::<_, i64>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, Option<i64>>(4)?,
+                    row.get::<_, Option<i64>>(5)?,
+                    row.get::<_, Option<i64>>(6)?,
+                    row.get::<_, Option<i64>>(7)?,
+                ))
+            })
+            .map_err(|error| format!("dim.query: {error}"))?;
+        let mut scanned = 0usize;
+        for row in rows {
+            let (rowid, provider, model, created_at, prompt, completion, cache_read, cache_write) =
+                row.map_err(|error| format!("dim.row: {error}"))?;
+            self.dim.last_rowid = self.dim.last_rowid.max(rowid);
+            let cache_read = cache_read.unwrap_or(0).max(0) as u64;
+            let cache_write = cache_write.unwrap_or(0).max(0) as u64;
+            // promptTokens already includes the cached part.
+            let counts = Counts {
+                input: (prompt.unwrap_or(0).max(0) as u64).saturating_sub(cache_read + cache_write),
+                output: completion.unwrap_or(0).max(0) as u64,
+                cache_read,
+                cache_write,
+            };
+            let Some(at) =
+                crate::models::timestamp_to_millis(&serde_json::Value::String(created_at))
+            else {
+                continue;
+            };
+            if counts.is_zero() {
+                continue;
+            }
+            let route = if provider == DIM_OWN_PROVIDER {
+                Route {
+                    id: SOURCE_DIM.into(),
+                    label: "DimAgent 订阅".into(),
+                    endpoint: urls.get(&provider).cloned(),
+                    inferred: false,
+                }
+            } else if let Some(url) = urls.get(&provider) {
+                classify_endpoint(url, &model)
+            } else {
+                Route {
+                    id: "unknown".into(),
+                    label: "未知接入（配置里已没有这个模型）".into(),
+                    endpoint: None,
+                    inferred: true,
+                }
+            };
+            // Local ports that are no longer running proxies aren't kept.
+            if route.id.starts_with(RETIRED_PREFIX) {
+                continue;
+            }
+            scanned += 1;
+            self.dim
+                .days
+                .entry(day_key(at as i64))
+                .or_default()
+                .entry(format!("{}\u{1f}{model}", route.id))
+                .or_default()
+                .add(&counts);
+            self.dim.routes.insert(route.id.clone(), route);
+        }
+        Ok(scanned)
+    }
+
     /// Where the next Cursor sync should start: an hour before the last one
     /// (late-arriving events; `seen` absorbs the overlap), or `backfill_ms`
     /// before `now_ms` on first run.
@@ -660,6 +799,14 @@ impl Ledger {
         for (date, models) in &self.devin.days {
             for (model, counts) in models {
                 book(date, SOURCE_DEVIN, model, &devin_route, counts);
+            }
+        }
+        for (date, keyed) in &self.dim.days {
+            for (key, counts) in keyed {
+                let (route_id, model) = key.split_once('\u{1f}').unwrap_or(("unknown", key));
+                if let Some(route) = self.dim.routes.get(route_id) {
+                    book(date, SOURCE_DIM, model, route, counts);
+                }
             }
         }
         let unknown = Route {
@@ -986,6 +1133,7 @@ fn current_route_label(id: &str) -> Option<String> {
         "qoder" => "Qoder".into(),
         "cursor" => "Cursor 订阅".into(),
         "devin" => "Devin 订阅".into(),
+        "dim" => "DimAgent 订阅".into(),
         _ => return None,
     };
     Some(label)
@@ -1597,6 +1745,113 @@ mod tests {
     /// Devin's real counts come out of `sessions.db` `metadata.metrics`,
     /// bucketed by model and ledger day, and a row-id cursor keeps rescan
     /// incremental (rows are append-only).
+    #[test]
+    fn dim_scan_books_runs_by_who_pays_and_resumes_from_rowid() {
+        let dir = std::env::temp_dir().join(format!("dango-dim-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let db_path = dir.join("dimcode.sqlite");
+        let _ = std::fs::remove_file(&db_path);
+        let conn = rusqlite::Connection::open(&db_path).unwrap();
+        conn.execute_batch(
+            "CREATE TABLE providers(providerId TEXT PRIMARY KEY, baseUrl TEXT, defaultBaseUrl TEXT, credential TEXT);
+             INSERT INTO providers VALUES('dimcode-api-oauth', NULL, 'https://dimagent.cn/v1', 'secret');
+             INSERT INTO providers VALUES('zhipuai-coding-plan', 'https://open.bigmodel.cn/api/coding/paas/v4', NULL, 'secret');
+             INSERT INTO providers VALUES('custom-local', 'http://127.0.0.1:9123/v1', NULL, NULL);
+             CREATE TABLE usage_ledger(ledgerId TEXT PRIMARY KEY, sessionId TEXT, runId TEXT,
+               providerId TEXT NOT NULL, modelId TEXT NOT NULL, usage TEXT NOT NULL, cost REAL, createdAt TEXT NOT NULL);",
+        )
+        .unwrap();
+        let insert = |id: &str,
+                      provider: &str,
+                      model: &str,
+                      prompt: u64,
+                      out: u64,
+                      cache: u64,
+                      at: &str| {
+            conn.execute(
+                "INSERT INTO usage_ledger VALUES(?1,'s','r',?2,?3,?4,NULL,?5)",
+                rusqlite::params![
+                    id,
+                    provider,
+                    model,
+                    format!("{{\"promptTokens\":{prompt},\"completionTokens\":{out},\"totalTokens\":{},\"cacheReadTokens\":{cache}}}", prompt + out),
+                    at
+                ],
+            )
+            .unwrap();
+        };
+        insert(
+            "a",
+            "dimcode-api-oauth",
+            "glm-5.3",
+            1000,
+            50,
+            800,
+            "2026-09-17T10:02:22.853Z",
+        );
+        insert(
+            "b",
+            "zhipuai-coding-plan",
+            "glm-5.3-flash",
+            500,
+            20,
+            100,
+            "2026-09-17T11:00:00Z",
+        );
+        insert(
+            "c",
+            "custom-local",
+            "bonsai",
+            900,
+            9,
+            0,
+            "2026-09-18T15:26:22.456",
+        );
+        insert(
+            "d",
+            "gone-provider",
+            "gemini-3.7-flash",
+            10,
+            1,
+            0,
+            "2026-09-18T01:00:00Z",
+        );
+        drop(conn);
+
+        let mut ledger = Ledger::default();
+        let status = ledger.scan_dim(&db_path);
+        assert!(status.found);
+        assert_eq!(status.files, 3, "the local-port run is not kept");
+        let at = parse_rfc3339_ms("2026-09-18T12:00:00Z").unwrap();
+        let report = ledger.report(at, 7, Vec::new());
+        let own = report
+            .models
+            .iter()
+            .find(|m| m.source == SOURCE_DIM && m.model == "glm-5.3")
+            .unwrap();
+        assert_eq!(own.route, "dim");
+        assert_eq!(own.counts.input, 200, "promptTokens minus cache reads");
+        assert_eq!(own.counts.cache_read, 800);
+        assert_eq!(own.counts.output, 50);
+        assert!(report
+            .models
+            .iter()
+            .any(|m| m.model == "glm-5.3-flash" && m.route.starts_with("host:")));
+        assert!(report
+            .models
+            .iter()
+            .any(|m| m.model == "gemini-3.7-flash" && m.route == "unknown"));
+        assert!(!report.models.iter().any(|m| m.model == "bonsai"));
+        assert!(report
+            .routes
+            .iter()
+            .any(|r| r.id == "dim" && r.label == "DimAgent 订阅"));
+
+        // Rescan: cursor holds, nothing booked twice.
+        assert_eq!(ledger.scan_dim(&db_path).files, 0);
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
     #[test]
     fn devin_scan_books_metrics_and_resumes_from_rowid() {
         let dir = std::env::temp_dir().join(format!("dango-devin-test-{}", std::process::id()));

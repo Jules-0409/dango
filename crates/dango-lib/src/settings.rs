@@ -10,6 +10,7 @@ const DEFAULT_ORDER: &[&str] = &[
     "devin",
     "cursor",
     "factory",
+    "dim",
 ];
 
 /// Animation pacing mode for the widget.

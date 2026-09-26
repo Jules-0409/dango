@@ -5,6 +5,7 @@ const PALETTE = {
   devin: '#A8C6A2',
   cursor: '#C9BCA6',
   factory: '#B8A9C9',
+  dim: '#DCB770',
 };
 
 const PRESET_COLORS = [
@@ -29,6 +30,7 @@ const DEFAULT_SHAPE = {
   devin: 'wedge',
   cursor: 'blob',
   factory: 'wedge',
+  dim: 'cloud',
 };
 
 const AVAILABLE_SHAPES = [

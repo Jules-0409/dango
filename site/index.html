@@ -283,16 +283,21 @@
   .fact p{font-size:13.5px;color:var(--ink-2);line-height:1.8;margin-top:4px;max-width:52ch;}
 
   /* 加小球 */
-  .groups{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;margin-top:44px;}
-  @media(max-width:760px){.groups{grid-template-columns:minmax(0,1fr);}}
-  .group{padding:22px;border-radius:24px;background:var(--etch);box-shadow:inset 0 0 0 1px var(--etch-edge),inset 0 1px 3px rgba(70,52,52,.05);}
-  .group h3{font-size:15px;font-weight:650;}
-  .group > p{font-size:13px;color:var(--ink-2);line-height:1.75;margin-top:6px;}
-  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
-  .chip{display:inline-flex;align-items:center;gap:8px;padding:7px 13px 7px 8px;border-radius:999px;font-size:13px;background:var(--paper);box-shadow:0 1px 2px rgba(64,46,46,.06),inset 0 0 0 1px var(--hair);}
-  .chip i{width:16px;height:16px;border-radius:50%;flex:none;}
-  .chip small{font-size:11px;color:var(--ink-3);}
-  .how{font-family:var(--f-mono);font-size:11.5px;color:var(--ink-3);margin-top:16px;line-height:1.8;}
+  .grp{margin-top:40px;}
+  .grp h3{font-size:15px;font-weight:650;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;}
+  .grp h3 span{font-size:12.5px;font-weight:400;color:var(--ink-3);}
+  .apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:14px;}
+  .app{position:relative;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:18px;background:var(--etch);
+    box-shadow:inset 0 0 0 1px var(--etch-edge);transition:transform .2s ease, box-shadow .2s ease;}
+  .app:hover{transform:translateY(-2px);box-shadow:inset 0 0 0 1px var(--etch-edge),0 10px 22px rgba(64,46,46,.08);}
+  .app .logo{width:42px;height:42px;flex:none;border-radius:12px;background:#fff;display:grid;place-items:center;
+    box-shadow:0 1px 3px rgba(64,46,46,.12),inset 0 0 0 1px rgba(62,55,52,.06);overflow:hidden;}
+  .app .logo img{width:26px;height:26px;object-fit:contain;display:block;}
+  .app-t{min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .app-t b{font-size:14px;font-weight:650;}
+  .app-t small{font-size:11.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .app .tag{position:absolute;top:8px;right:10px;font-style:normal;font-size:10px;color:var(--rose-deep);background:rgba(255,255,255,.55);padding:2px 7px;border-radius:99px;}
+  .grp-note{font-size:12.5px;color:var(--ink-3);line-height:1.8;margin-top:12px;max-width:70ch;}
 
   /* Token：跟设置页同一套——一个大数、一行小字、每天堆叠柱、按模型细条 */
   .tok{margin-top:44px;padding:clamp(18px,3vw,28px);border-radius:28px;background:var(--etch);box-shadow:inset 0 0 0 1px var(--etch-edge);}
@@ -472,31 +477,32 @@
 <!-- ═══════════ 加小球 ═══════════ -->
 <section id="add" class="wrap">
   <h2>你用哪家，<em>就挂哪颗</em></h2>
-  <p class="sec-sub">第一次打开，它只挂你电脑上装了的那几家，不会一上来一排哭脸。别的去「添加小球」里点一下。</p>
+  <p class="sec-sub">第一次打开，它只挂你电脑上装了的那几家。别的去设置里「添加小球」点一下：包月的登录一下就有数，按量付费的贴个 Key。</p>
 
-  <div class="groups">
-    <div class="group">
-      <h3>包月的：登录一下就行</h3>
-      <p>点「登录并添加」，它会调那家自己的登录：有命令行就在终端跑官方命令，没有就打开它的 App。Dango 不经手登录，只读你登录完留下的状态。</p>
-      <div class="chips">
-        <span class="chip"><i style="background:#E7A97C"></i>Claude <small>App</small></span>
-        <span class="chip"><i style="background:#C9BCA6"></i>Cursor <small>cursor-agent login</small></span>
-        <span class="chip"><i style="background:#A8C6A2"></i>Devin <small>devin auth login</small></span>
-        <span class="chip"><i style="background:#B8A9C9"></i>Factory <small>App</small></span>
-      </div>
+  <div class="grp">
+    <h3>包月的<span>点「登录并添加」，调那家自己的登录</span></h3>
+    <div class="apps">
+      <div class="app"><span class="logo"><img src="img/logos/claude.svg" alt="" loading="lazy"></span><div class="app-t"><b>Claude</b><small>打开 Claude App 登录</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/haze.svg" alt="" loading="lazy"></span><div class="app-t"><b>Haze</b><small>打开 Haze App 登录</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/cursor.svg" alt="" loading="lazy"></span><div class="app-t"><b>Cursor</b><small>终端里跑 cursor-agent login</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/devin.svg" alt="" loading="lazy"></span><div class="app-t"><b>Devin</b><small>终端里跑 devin auth login</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/factory.svg" alt="" loading="lazy"></span><div class="app-t"><b>Factory</b><small>打开 Factory App 登录</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/dim.png" alt="" loading="lazy"></span><div class="app-t"><b>DimAgent</b><small>打开 DimAgent 登录</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/gemini.png" alt="" loading="lazy"></span><div class="app-t"><b>Gemini</b><small>用 Google 账号登录</small></div><em class="tag">要装 Gemini 桥</em></div>
     </div>
-    <div class="group">
-      <h3>按量付费的：贴个 API Key</h3>
-      <p>贴上 Key，它去那家官方的余额接口查。Key 存在 Mac 钥匙串里，只发给那一家。想要一圈环的话填个预算，按余额占预算来画。</p>
-      <div class="chips">
-        <span class="chip"><i style="background:#8FA8D9"></i>DeepSeek</span>
-        <span class="chip"><i style="background:#A9B8C9"></i>Kimi</span>
-        <span class="chip"><i style="background:#9FC2BA"></i>阶跃星辰</span>
-        <span class="chip"><i style="background:#C2A9C9"></i>OpenRouter</span>
-        <span class="chip"><i style="background:#C9B9A0"></i>硅基流动</span>
-      </div>
-      <div class="how">DeepSeek /user/balance · Kimi /v1/users/me/balance<br>阶跃 /v1/accounts · OpenRouter /api/v1/credits · 硅基流动 /v1/user/info</div>
+    <p class="grp-note">Dango 不经手登录，只读你登录完留在电脑上的状态，也不会帮你刷新 token。Gemini 的额度来自账号池桥，下载的 App 里不带，要从源码另装。</p>
+  </div>
+
+  <div class="grp">
+    <h3>按量付费的<span>贴个 API Key，看余额</span></h3>
+    <div class="apps">
+      <div class="app"><span class="logo"><img src="img/logos/deepseek.svg" alt="" loading="lazy"></span><div class="app-t"><b>DeepSeek</b><small>余额 · 元</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/kimi.png" alt="" loading="lazy"></span><div class="app-t"><b>Kimi</b><small>余额 · 元</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/stepfun.svg" alt="" loading="lazy"></span><div class="app-t"><b>阶跃星辰</b><small>余额 · 元</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/openrouter.png" alt="" loading="lazy"></span><div class="app-t"><b>OpenRouter</b><small>剩余额度 · 美元</small></div></div>
+      <div class="app"><span class="logo"><img src="img/logos/siliconflow.png" alt="" loading="lazy"></span><div class="app-t"><b>硅基流动</b><small>余额 · 元</small></div></div>
     </div>
+    <p class="grp-note">Key 存在 Mac 钥匙串里，只发给那一家的官方余额接口。填个预算，就能按余额占预算画出一圈环。</p>
   </div>
 </section>
 
@@ -643,6 +649,8 @@
   const PLANS = [
     { id:'claude', name:'Claude', sub:'Max 套餐', shape:'star', color:'#E7A97C', p:64, inner:64, today:'1.9M',
       pools:[{ rows:[['5 小时',64],['本周',81]] }] },
+    { id:'haze', name:'Haze', sub:'Pro · 周额度', shape:'blob', color:'#D8A7A0', p:83, inner:100, today:'2.1M',
+      pools:[{ rows:[['周',83],['5 小时',100]] }] },
     { id:'antigravity', name:'Gemini', sub:'周额度 · 4 天后重置', shape:'gem', color:'#8FB5D9', p:70, inner:100, today:'2.4M',
       pools:[{ name:'Gemini', rows:[['周',70],['5 小时',100]] }, { name:'Claude & GPT', rows:[['周',100],['5 小时',100]] }] },
     { id:'devin', name:'Devin', sub:'Pro · 每日', shape:'wedge', color:'#A8C6A2', p:100, inner:null, today:'3.1M',
@@ -651,8 +659,8 @@
       pools:[{ rows:[['总额度',11],['Fast',13],['Auto',64]] }] },
     { id:'factory', name:'Factory', sub:'core 池', shape:'wedge', color:'#B8A9C9', p:38, inner:100, today:'640K',
       pools:[{ name:'standard', rows:[['5 小时',100],['周',0],['月',52]] }, { name:'core', rows:[['5 小时',100],['周',38],['月',61]] }] },
-    { id:'deepseek', name:'DeepSeek', sub:'余额 ¥86.20 · 预算 ¥100', shape:'cloud', color:'#85BAA1', p:86, inner:null, today:'—',
-      pools:[{ rows:[['余额',86]] }] },
+    { id:'dim', name:'DimAgent', sub:'Lite套餐 · 点数', shape:'cloud', color:'#DCB770', p:37, inner:null, today:'1.2M',
+      pools:[{ rows:[['点数',37],['联网搜索',84]] }] },
   ];
   const HEAD = Object.fromEntries(PLANS.map(x => [x.id, x.p]));
   const MODES = [['plain','细环'],['beads','珠串'],['double','双环'],['flow','流光'],['segments','分段'],['trail','尾迹']];

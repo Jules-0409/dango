@@ -146,16 +146,18 @@ pub fn http_client() -> reqwest::Client {
 
 /// One full quota refresh across every provider, with proxies attached.
 pub async fn fetch_snapshot(client: &reqwest::Client) -> Snapshot {
-    let (claude, haze, ag, probe_plans) = tokio::join!(
+    let (claude, haze, ag, probe_plans, dim) = tokio::join!(
         providers::claude::fetch(client),
         providers::haze::fetch(client),
         providers::antigravity::fetch_with_proxy(client),
         providers::probe_plans(client),
+        providers::dim::fetch(client),
     );
     let (ag_plan, ag_proxy) = ag;
 
     let mut plans = vec![claude, haze, ag_plan];
     plans.extend(probe_plans);
+    plans.push(dim);
     // User-added balls (API balances) and removed built-ins. Settings are
     // read fresh so a change on the settings page lands on the next refresh.
     let current = tokio::task::spawn_blocking(dango_lib::settings::load)

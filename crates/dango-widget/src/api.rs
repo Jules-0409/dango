@@ -302,8 +302,10 @@ async fn list_credentials() -> Json<serde_json::Value> {
             move || dango_lib::manual_creds::has(&plan)
         })
     };
-    let (haze, devin, factory) = tokio::join!(set("haze"), set("devin"), set("factory"));
+    let (haze, devin, factory, dim) =
+        tokio::join!(set("haze"), set("devin"), set("factory"), set("dim"));
     Json(serde_json::json!({
+        "dim": dim.unwrap_or(false),
         "haze": haze.unwrap_or(false),
         "devin": devin.unwrap_or(false),
         "factory": factory.unwrap_or(false),

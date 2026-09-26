@@ -27,6 +27,11 @@ pub fn recipe(plan_id: &str) -> Option<Recipe> {
             app: Some("Claude"),
             download: "https://claude.ai/download",
         },
+        "dim" => Recipe {
+            cli: None,
+            app: Some("DimAgent"),
+            download: "https://dimagent.cn",
+        },
         "haze" => Recipe {
             cli: None,
             app: Some("Haze"),

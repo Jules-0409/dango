@@ -44,11 +44,11 @@ The ring around each ball can be drawn six ways (thin, beads, double, flow, segm
 
 ## What it can read
 
-**Subscriptions**: Claude, Haze, Cursor, Devin, Factory, and Gemini / Antigravity. Dango reads the login each app or CLI already left on your Mac. In Settings → Add a ball, "Log in and add" opens that vendor's own login; Dango never handles the login itself. On first launch it only shows the ones installed on your machine.
+**Subscriptions**: Claude, Haze, Cursor, Devin, Factory, DimAgent, and Gemini / Antigravity. Dango reads the login each app or CLI already left on your Mac. In Settings → Add a ball, "Log in and add" opens that vendor's own login; Dango never handles the login itself. On first launch it only shows the ones installed on your machine.
 
 **Pay-as-you-go balances**: DeepSeek, Kimi, StepFun, OpenRouter, SiliconFlow. Paste an API key and it asks that vendor's balance endpoint. Set a budget if you want a ring.
 
-**Token ledger**: Settings has a page that adds up tokens per day and per model from local records: Claude Code's session logs, Factory sessions, Devin's local session database, and Cursor's own usage history. Everything is read locally and read-only.
+**Token ledger**: Settings has a page that adds up tokens per day and per model from local records: Claude Code's session logs, Factory sessions, Devin's and DimAgent's local session databases, and Cursor's own usage history. Everything is read locally and read-only.
 
 The Gemini ball needs the optional Gemini bridge (`dango-bridge`, see below), which isn't inside the app download.
 
