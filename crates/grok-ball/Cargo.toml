@@ -3,7 +3,8 @@ name = "grok-ball"
 version.workspace = true
 edition.workspace = true
 license = "MIT"
-description = "Backend-agnostic standalone SVG emotion ball engine ported from grok-ball.js"
+description = "Backend-agnostic standalone SVG emotion ball engine ported from grok-ball.js (tycoding/grok-ball, MIT)"
+repository = "https://github.com/tycoding/grok-ball"
 
 [dependencies]
 serde = { workspace = true }

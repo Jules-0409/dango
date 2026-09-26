@@ -19,7 +19,7 @@ countdowns, and the local proxy endpoint (if any) for that provider.
 | `dango-bridge` | Gemini/Antigravity 账号池桥（`127.0.0.1:8050`）：轮换、熔断、OpenAI + Anthropic 双协议翻译；设置页一键加账号（OAuth 回环，落库即进池） |
 | `cursor-bridge` | 把请求交给本机 Cursor CLI Agent 跑的包装（`127.0.0.1:8052`） |
 | `dango-lib` | 共用层：模型、macOS 钥匙串读写、各家 provider 探针、token 账本 |
-| `grok-ball` | 表情球渲染库（MIT vendor，Rust 移植） |
+| `grok-ball` | 表情球渲染库，[tycoding/grok-ball](https://github.com/tycoding/grok-ball) 的 Rust 移植（MIT） |
 
 ## 支持的额度源
 
@@ -48,6 +48,11 @@ cargo build --release --workspace
 **永不 refresh token**；手动粘贴的凭据进 `dango` 自己的 Keychain service，
 进程内拿不到明文第二次。接口都是逆向来的非公开端点，解析失败如实报错。
 
+## 致谢
+
+表情球引擎来自 **[tycoding/grok-ball](https://github.com/tycoding/grok-ball)**（MIT，Copyright (c) 2026 tycoding）。
+`ui/grok-ball.js` 是原版，`crates/grok-ball` 是逐帧对照原版移植的 Rust 版，许可证原文在 `crates/grok-ball/LICENSE`。
+
 ## License
 
-MIT（`grok-ball` 目录内为上游 MIT vendor 代码）。
+MIT。`grok-ball` 保留它自己的 MIT 许可证和版权声明。

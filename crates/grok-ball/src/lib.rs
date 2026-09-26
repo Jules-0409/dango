@@ -1,4 +1,5 @@
-// Grok Ball standalone engine | MIT License
+// Grok Ball standalone engine | MIT License | Copyright (c) 2026 tycoding
+// Upstream: https://github.com/tycoding/grok-ball
 // Ported from ui/grok-ball.js to a pure Rust backend-agnostic display list crate.
 
 pub mod ball;

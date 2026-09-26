@@ -1,4 +1,4 @@
-/*! Grok Ball standalone engine | MIT License */
+/*! Grok Ball standalone engine | MIT License | Copyright (c) 2026 tycoding | https://github.com/tycoding/grok-ball */
 /*
  * Grok Ball standalone engine.
  * Bundled in dependency order: ring geometry, emotion data, renderer, driver.
