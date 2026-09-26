@@ -9,7 +9,6 @@ pub const PLAN_PROXIES: &[(&str, &str)] = &[("antigravity", "http://127.0.0.1:80
 
 const ANTIGRAVITY_PROXY_URL: &str = "http://127.0.0.1:8050/healthz";
 
-
 /// Parse Antigravity's healthz payload into account counts and a safe status.
 pub fn antigravity_from_healthz(value: &Value) -> ProxyStatus {
     let pool = value.get("pool").and_then(Value::as_array);

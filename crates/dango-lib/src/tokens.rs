@@ -1039,7 +1039,6 @@ fn line_hash(line: &[u8]) -> String {
     format!("{hash:016x}")
 }
 
-
 /// A Gemini bridge `requests.jsonl` entry. `inputTokens` includes the
 /// cached part (`cachedTokens`); `outputTokens` already includes thinking.
 /// Entries written before the bridge logged input only carry output.
@@ -1384,7 +1383,10 @@ mod tests {
     #[test]
     fn endpoints_resolve_to_who_pays() {
         let route = |url: &str, id: &str| classify_endpoint(url, id).id;
-        assert_eq!(route("http://127.0.0.1:8099/v1", "custom:kimi"), "local:8099");
+        assert_eq!(
+            route("http://127.0.0.1:8099/v1", "custom:kimi"),
+            "local:8099"
+        );
         assert_eq!(route("http://127.0.0.1:8050", "custom:gemini-3"), "gemini");
         assert_eq!(
             route("http://127.0.0.1:8050", "custom:qoder/qfmodel-2"),

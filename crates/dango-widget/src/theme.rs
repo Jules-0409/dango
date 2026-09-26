@@ -12,6 +12,7 @@ pub use dango_lib::settings::BallSettings;
 
 /// Ball colours per plan id, from `ui/common.js`.
 pub const PALETTE: &[(&str, &str)] = &[
+    ("haze", "#D8A7A0"),
     ("claude", "#E7A97C"),
     ("antigravity", "#8FB5D9"),
     ("devin", "#A8C6A2"),
@@ -22,6 +23,7 @@ pub const PALETTE: &[(&str, &str)] = &[
 /// Default ball shape per plan id, from `ui/common.js`.
 pub const DEFAULT_SHAPE: &[(&str, &str)] = &[
     ("claude", "star"),
+    ("haze", "blob"),
     ("antigravity", "gem"),
     ("devin", "wedge"),
     ("cursor", "blob"),

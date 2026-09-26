@@ -1,58 +1,90 @@
-# Dango（额度团子）
+<p align="center"><img src="site/img/icon-512.png" width="112" alt="Dango icon"></p>
 
-A native macOS quota widget + unified AI-usage hub. One slim capsule lives on
-your screen edge — each animated ball is one provider's remaining quota.
-Hover a ball and a detail card slides out: every quota bucket, reset
-countdowns, and the local proxy endpoint (if any) for that provider.
+<h1 align="center">Dango</h1>
 
-常驻屏幕边缘的原生 macOS 小胶囊：每颗表情球是一家 AI 套餐的剩余额度，球越开心
-额度越足。悬停展开详情卡；顺带把各家 CLI/App 真实烧掉的 token 记成一本
-本地账（按天、按模型、按走的哪个出口），还有一座自带账号池的 Gemini 桥。
+<p align="center">Your AI quotas, as a stack of little faces on the edge of your Mac screen.</p>
 
-![capsule](site/img/capsule.png)
+<p align="center"><a href="README.zh-CN.md">中文</a> · <a href="https://www.liujufu.com/dango/">Website</a> · <a href="https://github.com/Jules-0409/dango/releases/latest">Download</a></p>
 
-## 有什么
+---
 
-| Crate | 干什么 |
+I pay for several AI coding plans at once, and I kept finding out a plan was empty halfway through a task. So I made Dango: a thin glass capsule that sits on the side of the screen, one ball per plan. When there's plenty left the ball smiles, when it's running low it sulks, and when Dango can't fetch the numbers it cries instead of showing you stale ones.
+
+![Dango on the desktop](site/img/capsule.png)
+
+## Download
+
+**[Dango for macOS (Apple Silicon)](https://github.com/Jules-0409/dango/releases/latest)**, macOS 13 or later.
+
+1. Unzip, then drag `Dango.app` into Applications.
+2. Open it. Dango isn't notarized by Apple (I don't have a paid developer account), so the first launch gets blocked. Go to **System Settings → Privacy & Security**, scroll down and click **Open Anyway**. If you'd rather use the terminal:
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/Dango.app
+   ```
+3. Want it to start with your Mac? Add it under **System Settings → General → Login Items**.
+
+## Using it
+
+- **Hover** a ball to see its card: every quota window, how much is left, when it resets, and how many tokens you burned today.
+- **Poke** a ball. Poke it three times quickly and it gets dizzy; five times and it throws confetti.
+- **Drag** the capsule anywhere. It remembers where you left it.
+- **Fold** it by clicking the arc at the top; it shrinks into a small pill. Click again to bring the balls back.
+- **Settings**: click the Dock icon, or use the menu bar icon → Settings…. The Dock icon only stays around while the settings window is open; close settings and it goes away, leaving just the capsule and the menu bar icon.
+
+What the faces mean:
+
+| Face | Remaining |
 |---|---|
-| `dango-widget` | 原生小件进程（winit + Core Animation，无 WebView）：胶囊、详情卡、菜单栏项、设置窗口；内置 `127.0.0.1:8049` 控制接口（设置页 / 快照 / SSE） |
-| `dango-bridge` | Gemini/Antigravity 账号池桥（`127.0.0.1:8050`）：轮换、熔断、OpenAI + Anthropic 双协议翻译；设置页一键加账号（OAuth 回环，落库即进池） |
-| `cursor-bridge` | 把请求交给本机 Cursor CLI Agent 跑的包装（`127.0.0.1:8052`） |
-| `dango-lib` | 共用层：模型、macOS 钥匙串读写、各家 provider 探针、token 账本 |
-| `grok-ball` | 表情球渲染库，[tycoding/grok-ball](https://github.com/tycoding/grok-ball) 的 Rust 移植（MIT） |
+| Happy | 60% or more |
+| Meh | 15% – 60% |
+| Sulking | under 15% |
+| Crying, dashed red ring | couldn't fetch (expired login, no network, API changed). The card tells you how to fix it. |
 
-## 支持的额度源
+The ring around each ball can be drawn six ways (thin, beads, double, flow, segments, trail). Pick one in Settings.
 
-- **Claude**（Claude Code 采样文件）、**Cursor**（官方用量明细）、
-  **Devin**（每日额度 % + 本机 `sessions.db` 的每轮真 token 记账）、
-  **Factory**、**Gemini/Antigravity**（走 8050 桥的账号池），
-  以及自建小球：`custom-*` 模板（DeepSeek / Moonshot / 阶跃 / OpenRouter /
-  SiliconFlow 余额）。
-- 读不到凭据就是读不到：球如实哭，永不拿缓存数冒充新鲜值。
+## What it can read
 
-## 跑起来
+**Subscriptions**: Claude, Haze, Cursor, Devin, Factory, and Gemini / Antigravity. Dango reads the login each app or CLI already left on your Mac. In Settings → Add a ball, "Log in and add" opens that vendor's own login; Dango never handles the login itself. On first launch it only shows the ones installed on your machine.
+
+**Pay-as-you-go balances**: DeepSeek, Kimi, StepFun, OpenRouter, SiliconFlow. Paste an API key and it asks that vendor's balance endpoint. Set a budget if you want a ring.
+
+**Token ledger**: Settings has a page that adds up tokens per day and per model from local records: Claude Code's session logs, Factory sessions, Devin's local session database, and Cursor's own usage history. Everything is read locally and read-only.
+
+The Gemini ball needs the optional Gemini bridge (`dango-bridge`, see below), which isn't inside the app download.
+
+## Your accounts stay yours
+
+- Other apps' logins are read, never written, and tokens are never refreshed, so your running apps don't get logged out.
+- Keys you paste go into the macOS Keychain under Dango's own entry. They're not written to files, not logged, and not sent back to the settings page.
+- The control API only listens on `127.0.0.1:8049` and rejects requests from other web pages.
+- All the vendor endpoints are unofficial and can change at any time. When parsing fails, Dango shows the error instead of guessing a number.
+
+## Build from source
+
+You need Rust (stable) on macOS.
 
 ```bash
-cargo build --release --workspace
-./target/release/dango            # 小件 + 8049 设置页
-./target/release/dango-bridge     # 可选：Gemini 账号池桥（8050）
-./target/release/cursor-bridge    # 可选：Cursor 桥（8052）
+git clone https://github.com/Jules-0409/dango.git
+cd dango
+cargo build --workspace --release
+./target/release/dango                # the widget + settings on 127.0.0.1:8049
+bash scripts/bundle-macos.sh          # makes dist/Dango.app and a zip
 ```
 
-设置页在 `http://127.0.0.1:8049/ui/settings.html`，或菜单栏图标 →「设置…」。
-要常驻就装 launchd（模板见 `crates/dango-bridge/scripts/` 和 MANUAL.md）。
+| Crate | What it is |
+|---|---|
+| `dango-widget` | The widget: winit + Core Animation drawing, no WebView for the capsule. Menu bar item, settings window, control API on `127.0.0.1:8049`. |
+| `dango-lib` | Shared pieces: data models, Keychain access, per-vendor probes, token ledger. |
+| `dango-bridge` | Optional Gemini / Antigravity account-pool bridge on `127.0.0.1:8050`. Add accounts from the settings page. |
+| `cursor-bridge` | Optional wrapper that hands requests to the local Cursor CLI agent, on `127.0.0.1:8052`. |
+| `grok-ball` | The face renderer, a Rust port of grok-ball.js. |
 
-## 凭据纪律
+More detail in [MANUAL.md](MANUAL.md) (Chinese).
 
-只读各家应用自己留在本机的登录态（CLI 凭据文件 / LocalStorage / 钥匙串），
-**永不 refresh token**；手动粘贴的凭据进 `dango` 自己的 Keychain service，
-进程内拿不到明文第二次。接口都是逆向来的非公开端点，解析失败如实报错。
+## Credits
 
-## 致谢
-
-表情球引擎来自 **[tycoding/grok-ball](https://github.com/tycoding/grok-ball)**（MIT，Copyright (c) 2026 tycoding）。
-`ui/grok-ball.js` 是原版，`crates/grok-ball` 是逐帧对照原版移植的 Rust 版，许可证原文在 `crates/grok-ball/LICENSE`。
+The emotion-ball engine comes from **[tycoding/grok-ball](https://github.com/tycoding/grok-ball)** (MIT, Copyright (c) 2026 tycoding). `ui/grok-ball.js` is the original; `crates/grok-ball` is a Rust port checked frame by frame against it. The original license is in `crates/grok-ball/LICENSE`.
 
 ## License
 
-MIT。`grok-ball` 保留它自己的 MIT 许可证和版权声明。
+MIT. `grok-ball` keeps its own MIT license and copyright notice.

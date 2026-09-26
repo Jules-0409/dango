@@ -54,6 +54,7 @@
       body: JSON.stringify(settings),
     }),
     snapshot: () => request('/snapshot'),
+    appMemory: () => request('/app-memory'),
     tokens: (days) => request(`/tokens?days=${encodeURIComponent(days)}`),
     proxyDetail: planId => request(`/proxy-detail/${encodeURIComponent(planId)}`),
     proxyTest: (planId, model) => request(`/proxy-test/${encodeURIComponent(planId)}`, {

@@ -1,5 +1,6 @@
 const PALETTE = {
   claude: '#E7A97C',
+  haze: '#D8A7A0',
   antigravity: '#8FB5D9',
   devin: '#A8C6A2',
   cursor: '#C9BCA6',
@@ -23,6 +24,7 @@ const PRESET_COLORS = [
 
 const DEFAULT_SHAPE = {
   claude: 'star',
+  haze: 'blob',
   antigravity: 'gem',
   devin: 'wedge',
   cursor: 'blob',

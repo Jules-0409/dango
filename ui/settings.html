@@ -9,7 +9,11 @@
 <body>
 <!-- 顶栏（原生标题栏已有「dango 设置」，这里不再重复印一遍） -->
 <div class="titlebar">
-  <span id="updateTime" class="update-time">—</span>
+  <div class="titlebar-meta">
+    <span id="updateTime" class="update-time">—</span>
+    <span class="titlebar-sep">·</span>
+    <span id="appMemory" class="app-memory" title="Dango 真实物理内存占用 (phys_footprint)">内存 —</span>
+  </div>
   <div class="titlebar-actions">
     <span id="saveStatus" class="save-status"></span>
     <button id="refreshBtn" class="glass-btn btn-xs" title="立即刷新数据">
@@ -27,11 +31,11 @@
 <div class="settings-main">
   <!-- 侧边栏 -->
   <aside class="sidebar">
-    <button class="nav-item active" data-tab="balls">
+    <button class="nav-item active" data-tab="balls" title="小球">
       <span class="nav-icon icon-balls"><svg viewBox="0 0 14 14" width="13" height="13"><circle cx="7" cy="7" r="5.4" fill="currentColor"/><ellipse cx="5.3" cy="6.5" rx="0.8" ry="1.5" fill="#1c1a19"/><ellipse cx="8.7" cy="6.5" rx="0.8" ry="1.5" fill="#1c1a19"/></svg></span>
       <span>小球</span>
     </button>
-    <button class="nav-item" data-tab="tokens">
+    <button class="nav-item" data-tab="tokens" title="Token 记录">
       <span class="nav-icon icon-tokens"><svg viewBox="0 0 14 14" width="11" height="11" fill="currentColor"><rect x="1.5" y="7" width="2.6" height="5" rx="1"/><rect x="5.7" y="3.5" width="2.6" height="8.5" rx="1"/><rect x="9.9" y="5.5" width="2.6" height="6.5" rx="1"/></svg></span>
       <span>Token 记录</span>
     </button>

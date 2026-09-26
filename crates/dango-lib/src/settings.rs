@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 
 const DEFAULT_ORDER: &[&str] = &[
     "claude",
+    "haze",
     "antigravity",
     "devin",
     "cursor",
@@ -304,7 +305,6 @@ pub fn settings_dir() -> Result<PathBuf, String> {
             .unwrap_or_else(|| PathBuf::from("."))
     })
 }
-
 
 /// Load settings from the standard user path, falling back to defaults on failure.
 pub fn load() -> Settings {

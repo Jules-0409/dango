@@ -9,6 +9,7 @@ pub mod card;
 pub mod card_font;
 pub mod card_layer;
 pub mod display_link;
+pub mod dock;
 pub mod settings_window;
 pub mod tray;
 pub mod window_ext;

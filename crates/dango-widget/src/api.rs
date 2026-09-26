@@ -52,6 +52,7 @@ pub fn router(state: ApiState) -> Router {
         .route("/settings", get(get_settings).put(put_settings))
         .route("/proxy-detail/{planId}", get(proxy_detail))
         .route("/tokens", get(token_report))
+        .route("/app-memory", get(app_memory))
         .route("/connect/{planId}", post(connect_plan))
         .route("/proxy-test/{planId}", post(proxy_test))
         .route(
@@ -301,8 +302,9 @@ async fn list_credentials() -> Json<serde_json::Value> {
             move || dango_lib::manual_creds::has(&plan)
         })
     };
-    let (devin, factory) = tokio::join!(set("devin"), set("factory"));
+    let (haze, devin, factory) = tokio::join!(set("haze"), set("devin"), set("factory"));
     Json(serde_json::json!({
+        "haze": haze.unwrap_or(false),
         "devin": devin.unwrap_or(false),
         "factory": factory.unwrap_or(false),
     }))
@@ -440,6 +442,106 @@ async fn token_report(axum::extract::Query(query): axum::extract::Query<TokensQu
         Ok(report) => Json(report).into_response(),
         Err(error) => (StatusCode::INTERNAL_SERVER_ERROR, error).into_response(),
     }
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AppMemoryResponse {
+    bytes: Option<u64>,
+    formatted: String,
+}
+
+#[cfg(target_os = "macos")]
+fn get_process_memory_bytes() -> Option<u64> {
+    use std::mem::MaybeUninit;
+
+    // Matches macOS task_vm_info struct from mach/task_info.h
+    #[repr(C)]
+    #[allow(non_camel_case_types)]
+    struct task_vm_info_data_t {
+        virtual_size: u64,
+        region_count: i32,
+        page_size: i32,
+        resident_size: u64,
+        resident_size_peak: u64,
+        device: u64,
+        device_peak: u64,
+        internal: u64,
+        internal_peak: u64,
+        external: u64,
+        external_peak: u64,
+        reusable: u64,
+        reusable_peak: u64,
+        purgeable_volatile_pmap: u64,
+        purgeable_volatile_resident: u64,
+        purgeable_volatile_virtual: u64,
+        compressed: u64,
+        compressed_peak: u64,
+        compressed_lifetime: u64,
+        phys_footprint: u64,
+        min_address: u64,
+        max_address: u64,
+        ledger_tag_free: i64,
+        ledger_tag_purgeable: i64,
+        ledger_tag_media_footprint: i64,
+        ledger_tag_media_nofootprint: i64,
+        ledger_tag_graphics_footprint: i64,
+        ledger_tag_graphics_nofootprint: i64,
+        ledger_tag_neural_footprint: i64,
+        ledger_tag_neural_nofootprint: i64,
+    }
+
+    const TASK_VM_INFO: i32 = 22;
+    const TASK_VM_INFO_COUNT: u32 =
+        (std::mem::size_of::<task_vm_info_data_t>() / std::mem::size_of::<i32>()) as u32;
+
+    extern "C" {
+        fn mach_task_self() -> u32;
+        fn task_info(
+            target_task: u32,
+            flavor: i32,
+            task_info_out: *mut i32,
+            task_info_outCnt: *mut u32,
+        ) -> i32;
+    }
+
+    unsafe {
+        let mut info = MaybeUninit::<task_vm_info_data_t>::zeroed();
+        let mut count = TASK_VM_INFO_COUNT;
+        let kr = task_info(
+            mach_task_self(),
+            TASK_VM_INFO,
+            info.as_mut_ptr() as *mut i32,
+            &mut count,
+        );
+        if kr == 0 {
+            let info = info.assume_init();
+            Some(info.phys_footprint)
+        } else {
+            None
+        }
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn get_process_memory_bytes() -> Option<u64> {
+    None
+}
+
+async fn app_memory() -> Json<AppMemoryResponse> {
+    let bytes = get_process_memory_bytes();
+    let formatted = match bytes {
+        Some(b) => {
+            let mb = b as f64 / (1024.0 * 1024.0);
+            if mb >= 1000.0 {
+                format!("{:.2} GB", mb / 1024.0)
+            } else {
+                format!("{:.1} MB", mb)
+            }
+        }
+        None => "—".to_string(),
+    };
+    Json(AppMemoryResponse { bytes, formatted })
 }
 
 #[derive(serde::Deserialize, Default)]
@@ -655,6 +757,31 @@ mod tests {
         let value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(value["plans"], serde_json::json!([]));
         assert!(value.get("fetchedAt").is_some());
+    }
+
+    #[tokio::test]
+    async fn app_memory_endpoint_returns_json_and_positive_bytes_on_macos() {
+        let response = app()
+            .oneshot(
+                Request::builder()
+                    .uri("/app-memory")
+                    .header(header::HOST, "127.0.0.1:8049")
+                    .body(AxumBody::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert!(value.get("formatted").is_some());
+        #[cfg(target_os = "macos")]
+        {
+            let b = value["bytes"].as_u64().unwrap();
+            assert!(b > 1024 * 1024); // at least 1MB
+        }
     }
 
     #[tokio::test]
@@ -1065,7 +1192,6 @@ mod tests {
         assert_eq!(value["requestsToday"], 3);
         assert!(value.get("requestsTotal").is_none());
     }
-
 
     #[test]
     fn recent_request_exposes_camel_case_fields() {

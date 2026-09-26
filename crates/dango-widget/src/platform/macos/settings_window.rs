@@ -26,6 +26,7 @@ impl SettingsWindow {
                 WindowAttributes::default()
                     .with_title("dango 设置")
                     .with_inner_size(LogicalSize::new(780.0, 580.0))
+                    .with_min_inner_size(LogicalSize::new(560.0, 420.0))
                     .with_resizable(true)
                     .with_decorations(true)
                     .with_visible(false),
@@ -116,9 +117,15 @@ impl SettingsWindow {
 }
 
 fn valid_tab(tab: &str) -> &str {
-    match tab {
-        "antigravity" => tab,
-        _ => "balls",
+    // 页签 id 是小写 slug；不认识的 id 交给前端回落到 balls。
+    if !tab.is_empty()
+        && tab
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '_')
+    {
+        tab
+    } else {
+        "balls"
     }
 }
 

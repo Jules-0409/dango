@@ -67,11 +67,23 @@ function applyTheme(theme){
 
 function updateHeaderTime(ts){
   const el = $('#updateTime');
-  if(!ts){
-    el.textContent = '刚刚更新';
-    return;
+  if(el){
+    el.textContent = ts ? ('更新于 ' + formatTime(ts)) : '刚刚更新';
   }
-  el.textContent = '更新于 ' + formatTime(ts);
+  updateAppMemory();
+}
+
+async function updateAppMemory(){
+  const el = $('#appMemory');
+  if(!el) return;
+  try{
+    const res = await DangoBridge.appMemory();
+    if(res && res.formatted){
+      el.textContent = '内存 ' + res.formatted;
+    }
+  }catch(_){
+    // backend starting or unavailable
+  }
 }
 
 function showSaveStatus(text, type = ''){
@@ -116,6 +128,7 @@ async function doSaveSettings(){
    凭据区：手动粘 token（dango 自己的钥匙串专区，vendor 只读）
    ============================================================ */
 const CRED_PLANS = [
+  { id:'haze',    name:'Haze',    hint:'session token（Haze App 登录态）' },
   { id:'devin',   name:'Devin',   hint:'CLI token' },
   { id:'factory', name:'Factory', hint:'access token' },
 ];
@@ -125,6 +138,7 @@ const CRED_SUPPORTED = new Set(CRED_PLANS.map(p => p.id));
 // 每家「读不到登录态时怎么办」的一句话指引；支持手动槽的再给一个跳转锚点。
 const CONNECT_GUIDE = {
   claude:      '打开 Claude 桌面端就会重新采样额度',
+  haze:        '在 Haze App 里「退出登录 → 重新登录」（只关窗重开不会换新凭据）',
   devin:       '在 Devin CLI 里重新登录（写回 credentials.toml）',
   factory:     '在 Factory App 里重新登录',
   cursor:      '在 Cursor App 里重新登录',
@@ -219,7 +233,7 @@ function renderBallsTab(){
     order = order.filter(id => plansMap.has(id));
   }
   if(order.length === 0){
-    order = ['claude', 'antigravity', 'devin', 'cursor', 'factory'];
+    order = ['claude', 'haze', 'antigravity', 'devin', 'cursor', 'factory'];
   }
   currentSettings.order = order;
 
@@ -634,9 +648,10 @@ function renderBallsTab(){
   bindAddBallPanel();
   bindConnectButtons();
   $('#resetDefaultsBtn').addEventListener('click', () => {
-    currentSettings.order = ['claude', 'antigravity', 'devin', 'cursor', 'factory'];
+    currentSettings.order = ['claude', 'haze', 'antigravity', 'devin', 'cursor', 'factory'];
     currentSettings.balls = {
       claude: { shape: 'star' },
+      haze: { shape: 'blob' },
       antigravity: { shape: 'gem' },
       devin: { shape: 'wedge' },
       cursor: { shape: 'blob' },
@@ -786,7 +801,7 @@ function syncProxyNav(snapshot){
   if(!nav) return;
   const plans = (snapshot?.plans || []).filter(p => p.proxy);
   const html = plans.map(p => `
-    <button class="nav-item ${currentTab === p.id ? 'active' : ''}" data-tab="${escapeHtml(p.id)}">
+    <button class="nav-item ${currentTab === p.id ? 'active' : ''}" data-tab="${escapeHtml(p.id)}" title="${escapeHtml(p.proxy.name || p.name)}">
       <span class="nav-icon icon-proxy">${PROXY_ICON}</span>
       <span>${escapeHtml(p.proxy.name || p.name)}</span>
       <span class="nav-dot ${p.proxy.ok ? 'ok' : 'bad'}"></span>
@@ -1218,6 +1233,7 @@ const BALL_TEMPLATES = [
 // 内置这几颗是怎么拿到数的（只读本机登录态或本机服务，不刷新任何 token）
 const BUILTIN_SOURCES = [
   ['claude', 'Claude', 'Claude 桌面端自己写的额度采样文件 plan-usage-history.json（5 小时 / 7 天窗口）'],
+  ['haze', 'Haze', 'Haze App 的登录态（LocalStorage，老版本走钥匙串）→ usehaze.ai/api/usage'],
   ['antigravity', 'Gemini', '本机桥 8050 的 /quota：Antigravity 账号池里正在用的那个账号'],
   ['devin', 'Devin', 'Devin CLI / 桌面端登录态 → 官方 GetUserStatus（每日额度 %；Pro 不给 ACU 和 token）'],
   ['cursor', 'Cursor', 'Cursor App 登录态 → cursor.com usage-summary，外加 Grok Bot 周额度'],
@@ -1225,9 +1241,9 @@ const BUILTIN_SOURCES = [
 ];
 
 // 一键登录：调各家自己的登录（官方 CLI 在终端里跑，或打开它的 App），我们只读登录结果。
-const CONNECTABLE = new Set(['claude', 'cursor', 'devin', 'factory']);
+const CONNECTABLE = new Set(['claude', 'haze', 'cursor', 'devin', 'factory']);
 const CONNECT_LABEL = {
-  claude: '打开 Claude', cursor: 'cursor-agent login',
+  claude: '打开 Claude', haze: '打开 Haze 登录', cursor: 'cursor-agent login',
   devin: 'devin auth login', factory: '打开 Factory 登录',
 };
 
@@ -1478,25 +1494,6 @@ let tokenPollTimer = null;
 let tokenReport = null;
 let tokenDays = 14;
 let tokenWithCache = true;
-let tokenView = 'agent';   // 'agent'：谁花的；'route'：花在谁头上
-
-const ROUTE_COLORS = {
-  anthropic: () => PALETTE.claude,
-  factory: () => PALETTE.factory,
-  cursor: () => PALETTE.cursor,
-  gemini: () => PALETTE.antigravity,
-  qoder: () => '#85BAA1',
-  unknown: () => 'var(--ink-4)',
-};
-function routeColor(id, index = 0){
-  if(ROUTE_COLORS[id]) return ROUTE_COLORS[id]();
-  if(id.startsWith('local:')) return '#C5A5B5';
-  // 第三方 API 按出现顺序轮换预设色（跳过已被套餐占用的几种）
-  const extra = ['#DCB770', '#7A9BB8', '#E5989B', '#85BAA1', '#C9BCA6'];
-  let h = 0;
-  for(const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return extra[(h + index) % extra.length];
-}
 
 const TOKEN_SOURCES = {
   'claude-code': { label: 'Claude Code', color: () => PALETTE.claude },
@@ -1504,10 +1501,14 @@ const TOKEN_SOURCES = {
   cursor: { label: 'Cursor', color: () => PALETTE.cursor },
   devin: { label: 'Devin', color: () => PALETTE.devin },
 };
-const TOKEN_UNREADABLE = 'Devin 的 token 是本机会话库（sessions.db）里每轮推理的记账，不是官方用量口径。Cursor 的用量取自它官方的用量明细（App、CLI Agent、Grok Bot 都在里面，5 分钟同步一次）。';
+const TOKEN_UNREADABLE = 'Devin 的 token 是本机会话库（sessions.db）里每轮推理的记账，不是官方用量口径。Cursor 的用量取自它官方的用量明细（App、CLI Agent、Grok Bot 都在里面，5 分钟同步一次）。Haze App 自己的用量只在它服务器上。';
 
 function tokenColor(source){
   return TOKEN_SOURCES[source]?.color() || 'var(--ink-4)';
+}
+
+function tokenDot(color){
+  return `<i class="token-dot" style="background:${color}"></i>`;
 }
 
 function fmtTokens(n){
@@ -1536,6 +1537,131 @@ function addCounts(into, c){
   return into;
 }
 const zeroCounts = () => ({ input: 0, output: 0, cacheRead: 0, cacheWrite: 0 });
+
+function tokenChartSVG(days, keys, pick, colorOf, labelOf){
+  if(!days || !days.length) return '<div class="token-empty">没有足够的天数数据</div>';
+  const W = 620, H = 136, padL = 40, padR = 10, padT = 12, padB = 20;
+  const innerW = W - padL - padR;
+  const innerH = H - padT - padB;
+  const N = days.length;
+  const gap = N > 20 ? 4 : (N > 10 ? 6 : 10);
+  const colW = Math.max(6, (innerW - gap * (N - 1)) / N);
+
+  const totals = days.map(d => {
+    let sum = 0;
+    for(const k of keys){
+      const c = pick(d, k);
+      if(c) sum += tokenSum(c);
+    }
+    return sum;
+  });
+  const maxVal = Math.max(...totals, 1000);
+
+  const gridSteps = [0.5, 1];
+  const gridLines = gridSteps.map(pct => {
+    const y = padT + innerH * (1 - pct);
+    const val = maxVal * pct;
+    return `
+      <line class="token-grid" x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke-dasharray="2,3" />
+      <text class="token-axis" x="${padL - 6}" y="${(y + 3.5).toFixed(1)}" text-anchor="end">${fmtTokens(val)}</text>
+    `;
+  }).join('');
+
+  const bars = days.map((d, i) => {
+    const x = padL + i * (colW + gap);
+    const total = totals[i];
+    const dateStr = d.date || '';
+    const dateLabel = dateStr.slice(5).replace('-', '/');
+    let curY = padT + innerH;
+    let stackHtml = '';
+    const detailLines = [];
+
+    for(const k of keys){
+      const c = pick(d, k);
+      const val = c ? tokenSum(c) : 0;
+      if(val > 0){
+        const segH = (val / maxVal) * innerH;
+        curY -= segH;
+        const color = colorOf(k);
+        stackHtml += `<rect class="token-bar" x="${x.toFixed(1)}" y="${curY.toFixed(1)}" width="${colW.toFixed(1)}" height="${Math.max(1, segH).toFixed(1)}" rx="1.5" fill="${color}" style="animation-delay:${i * 20}ms" />`;
+        detailLines.push({ key: k, label: labelOf(k), color, val });
+      }
+    }
+
+    if(total === 0){
+      stackHtml = `<rect class="token-bar-empty" x="${x.toFixed(1)}" y="${(padT + innerH - 2).toFixed(1)}" width="${colW.toFixed(1)}" height="2" rx="1" opacity="0.35" />`;
+    }
+
+    const tipPayload = {
+      date: dateStr,
+      total: fmtTokens(total),
+      details: detailLines.map(dl => ({ key: dl.key, label: dl.label, color: dl.color, val: fmtTokens(dl.val) }))
+    };
+    const tipData = escapeHtml(JSON.stringify(tipPayload));
+    const showLabel = N <= 10 || (i % (N > 20 ? 3 : 2) === 0) || i === N - 1;
+    const labelSvg = showLabel ? `<text class="token-axis" x="${(x + colW / 2).toFixed(1)}" y="${H - 5}" text-anchor="middle">${escapeHtml(dateLabel)}</text>` : '';
+
+    return `
+      <g class="token-bar-group" data-tip="${tipData}">
+        <rect x="${(x - gap / 4).toFixed(1)}" y="${padT}" width="${(colW + gap / 2).toFixed(1)}" height="${innerH}" fill="transparent" />
+        ${stackHtml}
+        ${labelSvg}
+      </g>
+    `;
+  }).join('');
+
+  return `
+    <svg class="token-chart" viewBox="0 0 ${W} ${H}">
+      ${gridLines}
+      <line class="token-grid" x1="${padL}" y1="${padT + innerH}" x2="${W - padR}" y2="${padT + innerH}" />
+      ${bars}
+    </svg>
+  `;
+}
+
+function bindChartTooltip(container){
+  const tip = container.querySelector('.chart-tooltip');
+  if(!tip) return;
+  const groups = container.querySelectorAll('.token-bar-group');
+
+  groups.forEach(g => {
+    g.addEventListener('mouseenter', () => {
+      const raw = g.dataset.tip;
+      if(!raw) return;
+      try{
+        const data = JSON.parse(raw);
+        let detailHtml = '';
+        if(data.details && data.details.length){
+          detailHtml = data.details.map(d => `
+            <div class="chart-tooltip-line">
+              ${tokenDot(d.color)}
+              <span>${escapeHtml(d.label)}</span>
+              <b>${escapeHtml(d.val)}</b>
+            </div>
+          `).join('');
+        }
+        tip.innerHTML = `
+          <div class="chart-tooltip-date">${escapeHtml(data.date)}</div>
+          <div class="chart-tooltip-total">合计 ${escapeHtml(data.total)}</div>
+          ${detailHtml}
+        `;
+        tip.style.opacity = '1';
+      }catch(_){}
+    });
+
+    g.addEventListener('mousemove', e => {
+      const rect = container.getBoundingClientRect();
+      const x = Math.max(50, Math.min(rect.width - 50, e.clientX - rect.left));
+      const y = Math.max(20, e.clientY - rect.top);
+      tip.style.left = `${x}px`;
+      tip.style.top = `${y}px`;
+    });
+
+    g.addEventListener('mouseleave', () => {
+      tip.style.opacity = '0';
+    });
+  });
+}
 
 function renderTokensTab(){
   $('#mainPane').innerHTML = `
@@ -1579,7 +1705,7 @@ async function loadTokens(){
   try{
     const report = await DangoBridge.tokens(tokenDays);
     // 轮询拿到一样的数就别重画（条形动画会重播）。
-    const same = tokenReport && JSON.stringify(tokenReport) === JSON.stringify(report) && $('#tokenBody .token-stats');
+    const same = tokenReport && JSON.stringify(tokenReport) === JSON.stringify(report) && $('#tokenBody .token-hero');
     tokenReport = report;
     if(currentTab === 'tokens' && !same) renderTokenBody(report);
   }catch(e){
@@ -1591,97 +1717,61 @@ async function loadTokens(){
 function renderTokenBody(report){
   const body = $('#tokenBody');
   if(!body) return;
-  const days = report.days;
-  const sources = Object.keys(TOKEN_SOURCES);
-  const today = days[days.length - 1];
-  const todayTotal = today ? Object.values(today.bySource).reduce((n, c) => n + tokenSum(c), 0) : 0;
+  const days = report.days || [];
+  const keys = Object.keys(TOKEN_SOURCES);
+
+  const today = days.find(d => d.date === report.today) || days[days.length - 1];
+  const todayCounts = zeroCounts();
+  for(const c of Object.values(today?.bySource || {})) addCounts(todayCounts, c);
+
   const range = zeroCounts();
+  const bySource = {};
+  let activeDays = 0;
   for(const day of days){
-    for(const c of Object.values(day.bySource)) addCounts(range, c);
+    let daySum = 0;
+    for(const [k, c] of Object.entries(day.bySource || {})){
+      addCounts(range, c);
+      addCounts(bySource[k] ||= zeroCounts(), c);
+      daySum += tokenSum(c);
+    }
+    if(daySum > 0) activeDays++;
   }
   const rangeTotal = tokenSum(range);
-  const activeDays = days.filter(d => Object.keys(d.bySource).length).length;
-  const routeLabels = Object.fromEntries((report.routes || []).map(r => [r.id, r.label]));
-  const routeKeys = (report.routes || []).map(r => r.id);
-  const chart = tokenView === 'route'
-    ? {
-        keys: routeKeys,
-        pick: d => d.byRoute || {},
-        colorOf: id => routeColor(id),
-        labelOf: id => routeLabels[id] || id,
-      }
-    : {
-        keys: sources,
-        pick: d => d.bySource,
-        colorOf: tokenColor,
-        labelOf: s => TOKEN_SOURCES[s]?.label || s,
-      };
-  chart.svg = tokenChartSVG(days, chart.keys, chart.pick, chart.colorOf, chart.labelOf);
-  // 缓存命中率 = 缓存读 ÷ 全部输入侧（新输入 + 缓存读 + 缓存写），按近 N 天加权。
-  const rangeBySource = {};
-  for(const day of days){
-    for(const [src, c] of Object.entries(day.bySource)){
-      rangeBySource[src] = addCounts(rangeBySource[src] || zeroCounts(), c);
-    }
-  }
-  const cacheSplit = Object.entries(rangeBySource)
-    .filter(([, c]) => cacheRate(c) != null)
-    .map(([src, c]) => `<span class="token-src"><i style="background:${tokenColor(src)}"></i>${escapeHtml(TOKEN_SOURCES[src]?.label || src)} ${fmtRate(cacheRate(c))}</span>`)
-    .join('');
-  const todaySplit = today ? Object.entries(today.bySource).map(([src, c]) =>
-    `<span class="token-src"><i style="background:${tokenColor(src)}"></i>${escapeHtml(TOKEN_SOURCES[src]?.label || src)} ${fmtTokens(tokenSum(c))}</span>`).join('') : '';
+  const hitRate = cacheRate(range);
+
+  const legend = keys.map(k => {
+    const sum = tokenSum(bySource[k]);
+    if(!sum) return '';
+    const pct = rangeTotal ? Math.round(sum / rangeTotal * 100) : 0;
+    return `<span class="token-legend-item">${tokenDot(tokenColor(k))}${escapeHtml(TOKEN_SOURCES[k].label)}<b>${fmtTokens(sum)}</b><em>${pct}%</em></span>`;
+  }).join('');
 
   body.innerHTML = `
-    <div class="token-stats">
-      <div class="token-stat">
-        <div class="token-stat-label">今天</div>
-        <div class="token-stat-value">${fmtTokens(todayTotal)}</div>
-        <div class="token-stat-sub">${todaySplit || '还没有用量'}</div>
+    <div class="token-hero">
+      <div class="token-hero-main">
+        <span class="token-hero-num">${fmtTokens(rangeTotal)}</span>
+        <span class="token-hero-unit">近 ${days.length} 天</span>
       </div>
-      <div class="token-stat">
-        <div class="token-stat-label">近 ${days.length} 天</div>
-        <div class="token-stat-value">${fmtTokens(rangeTotal)}</div>
-        <div class="token-stat-sub">输入 ${fmtTokens(range.input)} · 输出 ${fmtTokens(range.output)}${tokenWithCache ? ` · 缓存 ${fmtTokens(range.cacheRead + range.cacheWrite)}` : ''}</div>
-      </div>
-      <div class="token-stat">
-        <div class="token-stat-label">平均缓存命中率</div>
-        <div class="token-stat-value">${fmtRate(cacheRate(range))}</div>
-        <div class="token-stat-sub">${cacheSplit || '没有输入'}</div>
-      </div>
-      <div class="token-stat">
-        <div class="token-stat-label">有用量的日子 · 日均</div>
-        <div class="token-stat-value">${fmtTokens(activeDays ? Math.round(rangeTotal / activeDays) : 0)}</div>
-        <div class="token-stat-sub">${activeDays} / ${days.length} 天</div>
+      <div class="token-hero-stats">
+        <span>今天 <b>${fmtTokens(tokenSum(todayCounts))}</b></span>
+        ${hitRate != null ? `<span>缓存命中 <b>${fmtRate(hitRate)}</b></span>` : ''}
+        <span>有用量 <b>${activeDays}/${days.length}</b> 天</span>
       </div>
     </div>
 
     <div class="section-panel">
-      <div class="panel-head">
-        <span class="panel-title">每日用量</span>
-        <div class="seg-control seg-mini" id="tokenView">
-          <button class="seg-btn ${tokenView === 'agent' ? 'active' : ''}" data-v="agent">按 Agent</button>
-          <button class="seg-btn ${tokenView === 'route' ? 'active' : ''}" data-v="route">按源头</button>
-        </div>
+      <div class="panel-head"><span class="panel-title">每天</span></div>
+      <div class="chart-container" id="tokenChartContainer">
+        ${tokenChartSVG(days, keys, (d, k) => d.bySource?.[k], tokenColor, k => TOKEN_SOURCES[k]?.label || k)}
+        <div class="chart-tooltip"></div>
       </div>
-      ${chart.svg}
-      <div class="token-legend token-legend-wrap">${chart.keys.map(k =>
-        `<span class="token-src"><i style="background:${chart.colorOf(k)}"></i>${escapeHtml(chart.labelOf(k))}</span>`).join('')}</div>
+      <div class="token-legend">${legend}</div>
     </div>
 
     <div class="section-panel">
-      <div class="panel-head"><span class="panel-title">钱花在哪</span>
-        <span class="token-legend">近 ${days.length} 天 · 按 Agent 的配置追到付费方</span></div>
-      ${tokenRouteList(report.routes)}
+      <div class="panel-head"><span class="panel-title">按模型</span></div>
+      ${tokenModelRows(report.models)}
     </div>
-
-
-    <div class="section-panel">
-      <div class="panel-head"><span class="panel-title">按模型</span>
-        <span class="token-legend">近 ${days.length} 天</span></div>
-      ${tokenModelTable(report.models)}
-    </div>
-
-    ${tokenDevinPanel(report)}
 
     <div class="token-sources">
       ${report.sources.map(s => `
@@ -1690,83 +1780,16 @@ function renderTokenBody(report){
           <b>${escapeHtml(s.label)}</b>
           <span>${s.id === 'cursor'
             ? (s.found ? `官方用量接口 · 本次同步 ${s.files} 条` : (s.error ? '' : '还没同步'))
-            : s.found ? `${s.files} 个${s.id === 'factory' ? '会话' : '日志'}` : '本机没找到'}</span>
+            : (s.found ? `${s.files} 个${s.id === 'factory' ? '会话' : '日志'}` : '本机没找到')}</span>
           ${s.error ? `<span class="token-error-inline">${escapeHtml(s.error)}</span>` : ''}
         </div>`).join('')}
       <div class="token-source-row dim">${escapeHtml(TOKEN_UNREADABLE)}
-        Factory 只记每个会话的累计数，按会话最后活动那天入账；源头按会话第一次被记账时的模型配置判定。</div>
-    </div>`;
-  $('#tokenView')?.addEventListener('click', e => {
-    const v = e.target.closest('.seg-btn')?.dataset.v;
-    if(!v || v === tokenView) return;
-    tokenView = v;
-    renderTokenBody(report);
-  });
-}
+        Factory 只记每个会话的累计数，按会话最后活动那天入账；套餐按会话第一次被记账时的模型配置判定。</div>
+    </div>
+  `;
 
-function tokenRouteList(routes){
-  const rows = (routes || []).filter(r => tokenSum(r.counts) > 0)
-    .sort((a, b) => tokenSum(b.counts) - tokenSum(a.counts));
-  if(!rows.length) return '<div class="token-empty">这段时间没有用量。</div>';
-  const top = tokenSum(rows[0].counts) || 1;
-  return `<div class="token-routes">${rows.map(r => {
-    const agents = Object.entries(r.bySource || {})
-      .map(([src, c]) => `${TOKEN_SOURCES[src]?.label || src} ${fmtTokens(tokenSum(c))}`).join(' · ');
-    const endpoint = (r.endpoints || []).join('  ');
-    return `
-      <div class="token-route">
-        <div class="token-route-line">
-          <i style="background:${routeColor(r.id)}"></i>
-          <b>${escapeHtml(r.label)}</b>
-          ${r.inferred ? '<span class="token-tag" title="模型配置后来改过或只在备份里找到，按最接近的一份推断">推断</span>' : ''}
-          <span class="token-route-total">${fmtTokens(tokenSum(r.counts))}</span>
-        </div>
-        <div class="token-route-bar"><em style="width:${(tokenSum(r.counts) / top * 100).toFixed(1)}%;background:${routeColor(r.id)}"></em></div>
-        <div class="token-route-sub">${escapeHtml(agents)}${endpoint ? ` <code>${escapeHtml(endpoint)}</code>` : ''}</div>
-      </div>`;
-  }).join('')}</div>`;
-}
-
-function tokenChartSVG(days, keys, pick, colorOf, labelOf){
-  const W = 640, H = 170, padL = 44, padB = 20, padT = 8;
-  const totals = days.map(d => keys.reduce((n, s) => n + tokenSum(pick(d)[s]), 0));
-  const max = Math.max(...totals, 1);
-  // 取一个好读的刻度上限：1/2/5 × 10^k
-  const pow = Math.pow(10, Math.floor(Math.log10(max)));
-  const nice = [1, 2, 2.5, 5, 10].map(m => m * pow).find(v => v >= max) || max;
-  const plotH = H - padB - padT, plotW = W - padL - 4;
-  const slot = plotW / days.length;
-  const barW = Math.max(4, Math.min(26, slot * 0.62));
-  let bars = '';
-  days.forEach((d, i) => {
-    let y = padT + plotH;
-    const x = padL + i * slot + (slot - barW) / 2;
-    const tip = [`${d.date}  ${fmtTokens(totals[i])}`]
-      .concat(keys.filter(s => tokenSum(pick(d)[s]) > 0).map(s => `${labelOf(s)} ${fmtTokens(tokenSum(pick(d)[s]))}`))
-      .join('\n');
-    const segs = keys.filter(s => tokenSum(pick(d)[s]) > 0);
-    segs.forEach((s, k) => {
-      const h = Math.max(1.5, tokenSum(pick(d)[s]) / nice * plotH);
-      y -= h;
-      const top = k === segs.length - 1;
-      bars += `<rect class="token-bar" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}"
-        rx="${top ? 3 : 0}" fill="${colorOf(s)}" style="animation-delay:${i * 18}ms"><title>${escapeHtml(tip)}</title></rect>`;
-    });
-    if(!segs.length){
-      bars += `<rect x="${x.toFixed(1)}" y="${(padT + plotH - 1.5).toFixed(1)}" width="${barW.toFixed(1)}" height="1.5" rx="0.75" class="token-bar-empty"><title>${escapeHtml(d.date)}  无用量</title></rect>`;
-    }
-    const every = days.length > 16 ? 5 : days.length > 8 ? 2 : 1;
-    if(i % every === 0 || i === days.length - 1){
-      bars += `<text x="${(padL + i * slot + slot / 2).toFixed(1)}" y="${H - 5}" class="token-axis" text-anchor="middle">${d.date.slice(5).replace('-', '/')}</text>`;
-    }
-  });
-  let grid = '';
-  for(const f of [0, 0.5, 1]){
-    const y = padT + plotH - f * plotH;
-    grid += `<line x1="${padL}" x2="${W - 4}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" class="token-grid"/>`
-      + `<text x="${padL - 6}" y="${(y + 3).toFixed(1)}" class="token-axis" text-anchor="end">${f ? fmtTokens(nice * f) : '0'}</text>`;
-  }
-  return `<svg class="token-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="每日 token 用量">${grid}${bars}</svg>`;
+  const chart = $('#tokenChartContainer');
+  if(chart) bindChartTooltip(chart);
 }
 
 function tokenRouteShort(id){
@@ -1774,49 +1797,30 @@ function tokenRouteShort(id){
   return label.split(' · ')[0];
 }
 
-// Devin Pro 的配额读数是「每日额度剩多少 %」；token 数另有来源——本机
-// Devin CLI 会话库（sessions.db）每条推理消息都带 metrics，按天/模型记进账本。
-// 这里画的是配额那条线：每天取最低读数 = 那天用掉多少。
-function tokenDevinPanel(report){
-  const seen = Object.fromEntries(report.devinDaily || []);
-  if(!Object.keys(seen).length) return '';
-  const cells = report.days.map(d => {
-    const used = seen[d.date];
-    const h = used == null ? 0 : Math.max(2, used / 100 * 34);
-    return `<div class="devin-day" title="${escapeHtml(d.date)} ${used == null ? '没有读数' : `用掉每日额度 ${Math.round(used)}%`}">
-      <em style="height:${h.toFixed(1)}px;${used == null ? 'opacity:.25' : ''}"></em></div>`;
-  }).join('');
-  const values = Object.values(seen);
-  const avg = values.reduce((n, v) => n + v, 0) / values.length;
-  const today = seen[report.today];
-  return `<div class="section-panel">
-    <div class="panel-head"><span class="panel-title">Devin</span>
-      <span class="token-legend">今天用掉每日额度 ${today == null ? '—' : Math.round(today) + '%'} · 记录到的日子平均 ${Math.round(avg)}%</span></div>
-    <div class="devin-days" style="--c:${PALETTE.devin}">${cells}</div>
-    <div class="token-route-sub dim" style="padding-left:0">上面是配额读数（每天记最低那次）；token 账来自本机会话库的每轮推理记账，已经并进上面的按天和模型表。</div>
-  </div>`;
-}
-
-function tokenModelTable(models){
-  const rows = models.filter(m => tokenSum(m.counts) > 0)
-    .sort((a, b) => tokenSum(b.counts) - tokenSum(a.counts)).slice(0, 14);
+// 一行一个模型：点 · 名字 · 谁付钱 · 细条 · 合计/命中率；输入输出缓存放 tooltip
+function tokenModelRows(models){
+  const rows = (models || []).filter(m => tokenSum(m.counts) > 0)
+    .sort((a, b) => tokenSum(b.counts) - tokenSum(a.counts)).slice(0, 10);
   if(!rows.length) return '<div class="token-empty">这段时间没有用量。</div>';
   const top = tokenSum(rows[0].counts) || 1;
-  return `<div class="token-table">
-    <div class="token-tr token-th"><span>模型</span><span>输入</span><span>输出</span>${tokenWithCache ? '<span>缓存读</span><span>缓存写</span>' : ''}<span>命中率</span><span>合计</span></div>
-    ${rows.map(m => `
-      <div class="token-tr">
-        <span class="token-model" title="${escapeHtml(TOKEN_SOURCES[m.source]?.label || m.source)} · ${escapeHtml(m.model)}">
-          <i style="background:${tokenColor(m.source)}"></i>${escapeHtml(m.model)}<small class="token-model-route">${escapeHtml(tokenRouteShort(m.route))}</small>
-          <em class="token-share" style="width:${(tokenSum(m.counts) / top * 100).toFixed(1)}%;background:${tokenColor(m.source)}"></em>
-        </span>
-        <span>${fmtTokens(m.counts.input)}</span>
-        <span>${fmtTokens(m.counts.output)}</span>
-        ${tokenWithCache ? `<span>${fmtTokens(m.counts.cacheRead)}</span><span>${fmtTokens(m.counts.cacheWrite)}</span>` : ''}
-        <span class="token-rate">${fmtRate(cacheRate(m.counts))}</span>
-        <span class="token-total">${fmtTokens(tokenSum(m.counts))}</span>
-      </div>`).join('')}
-  </div>`;
+  return `<div class="model-ranks">${rows.map(m => {
+    const total = tokenSum(m.counts);
+    const color = tokenColor(m.source);
+    const plan = m.route && m.route !== 'unknown'
+      ? tokenRouteShort(m.route)
+      : (TOKEN_SOURCES[m.source]?.label || m.source);
+    const c = m.counts;
+    const tip = `输入 ${fmtTokens(c.input)} · 输出 ${fmtTokens(c.output)} · 缓存读 ${fmtTokens(c.cacheRead)} · 缓存写 ${fmtTokens(c.cacheWrite)}`;
+    return `
+      <div class="model-rank" title="${escapeHtml(tip)}">
+        ${tokenDot(color)}
+        <span class="model-rank-name">${escapeHtml(m.model)}</span>
+        <span class="model-rank-plan">${escapeHtml(plan)}</span>
+        <span class="model-rank-hit">${fmtRate(cacheRate(c))}</span>
+        <span class="model-rank-total">${fmtTokens(total)}</span>
+        <span class="model-rank-track"><i style="width:${(total / top * 100).toFixed(1)}%;background:${color}"></i></span>
+      </div>`;
+  }).join('')}</div>`;
 }
 
 /* ============================================================
@@ -1835,6 +1839,13 @@ function switchTab(tabId, updateHash = true){
   document.querySelectorAll('.sidebar .nav-item').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tabId);
   });
+
+  const pane = $('#mainPane');
+  if(pane){
+    pane.classList.remove('pane-transition');
+    void pane.offsetWidth;
+    pane.classList.add('pane-transition');
+  }
 
   if(proxyPollTimer){
     clearInterval(proxyPollTimer);
@@ -1887,9 +1898,11 @@ async function init(){
   $('#refreshBtn').addEventListener('click', async () => {
     const btn = $('#refreshBtn');
     btn.disabled = true;
+    btn.classList.add('refreshing');
     showToast('正在刷新...');
     try{
       await DangoBridge.refresh();
+      updateAppMemory();
       if(currentTab === 'tokens'){
         await loadTokens();
       }else if(currentTab !== 'balls'){
@@ -1900,6 +1913,7 @@ async function init(){
       showSaveStatus('刷新失败: ' + e, 'err');
     }finally{
       btn.disabled = false;
+      setTimeout(() => btn.classList.remove('refreshing'), 600);
     }
   });
 
@@ -1961,6 +1975,9 @@ async function init(){
     console.error('snapshot failed:', e);
     showSaveStatus('读取数据失败: ' + e, 'err');
   }
+
+  updateAppMemory();
+  setInterval(updateAppMemory, 15000);
 
   window.addEventListener('hashchange', () => switchTab(location.hash.slice(1), false));
   switchTab(location.hash.slice(1) || new URLSearchParams(location.search).get('tab') || 'balls', false);

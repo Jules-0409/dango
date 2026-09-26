@@ -1,3 +1,4 @@
+pub mod keychain;
 pub mod manual_creds;
 pub mod models;
 pub mod ports;

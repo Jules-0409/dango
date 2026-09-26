@@ -87,7 +87,6 @@ pub struct AccountInfo {
     pub detail: Option<String>,
 }
 
-
 /// Fetch Antigravity models, pool health, and recent logs concurrently.
 /// `/healthz` may schedule the bridge's normal background quota refresh.
 pub async fn antigravity_detail(client: &reqwest::Client) -> ProxyDetail {

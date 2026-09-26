@@ -1381,6 +1381,7 @@ impl WidgetApp {
     }
 
     fn open_settings(&mut self, event_loop: &ActiveEventLoop, tab: &str) {
+        crate::platform::macos::dock::show_in_dock(true);
         if let Some(window) = self.settings_window.as_ref() {
             window.focus(tab);
         } else {
@@ -1397,6 +1398,9 @@ impl ApplicationHandler<UserEvent> for WidgetApp {
         if self.windows.is_some() {
             return;
         }
+        if let Some(proxy) = self.proxy.clone() {
+            crate::platform::macos::dock::install_reopen_handler(proxy);
+        }
         self.initialize(event_loop);
 
         let runtime = tokio::runtime::Builder::new_multi_thread()
@@ -1406,11 +1410,7 @@ impl ApplicationHandler<UserEvent> for WidgetApp {
             .expect("tokio runtime");
         let state = DataState::new(data::http_client());
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<DataEvent>();
-        let mut data_rx = data::spawn(
-            Arc::clone(&state),
-            data::DataConfig,
-            runtime.handle(),
-        );
+        let mut data_rx = data::spawn(Arc::clone(&state), data::DataConfig, runtime.handle());
 
         // Forward data events (from the data loops, the control API and the
         // tray) to the UI thread.
@@ -1567,6 +1567,7 @@ impl ApplicationHandler<UserEvent> for WidgetApp {
                 if let Some(mut window) = self.settings_window.take() {
                     window.close();
                 }
+                crate::platform::macos::dock::show_in_dock(false);
             }
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::Resized(size) => {
@@ -1919,8 +1920,8 @@ pub fn run(config: Config) {
     disable_app_nap();
 
     let mut builder = EventLoop::<UserEvent>::with_user_event();
-    // Regular (not Accessory) so the app gets a Dock icon and shows in
-    // Cmd-Tab / Force Quit — the menu-bar item alone is too easy to lose.
+    // 启动时是 Regular：程序坞里有图标，点它打开设置。设置窗口关掉后切成
+    // Accessory 收走图标（见 platform/macos/dock.rs）。
     builder.with_activation_policy(ActivationPolicy::Regular);
     let event_loop = builder.build().expect("build event loop");
 
@@ -1932,7 +1933,7 @@ pub fn run(config: Config) {
 /// The app icon (assets/AppIcon.svg rendered to 1024 px), baked into the binary.
 const APP_ICON_PNG: &[u8] = include_bytes!("../../../assets/AppIcon.png");
 
-fn set_dock_icon() {
+pub(crate) fn set_dock_icon() {
     use objc2::rc::Retained;
     use objc2::runtime::AnyObject;
     use objc2::ClassType;

@@ -27,6 +27,11 @@ pub fn recipe(plan_id: &str) -> Option<Recipe> {
             app: Some("Claude"),
             download: "https://claude.ai/download",
         },
+        "haze" => Recipe {
+            cli: None,
+            app: Some("Haze"),
+            download: "https://usehaze.ai",
+        },
         "cursor" => Recipe {
             cli: Some(("cursor-agent", &["login"])),
             app: Some("Cursor"),
@@ -178,7 +183,7 @@ mod tests {
 
     #[test]
     fn every_builtin_ball_but_gemini_has_a_recipe() {
-        for plan in ["claude", "cursor", "devin", "factory"] {
+        for plan in ["claude", "haze", "cursor", "devin", "factory"] {
             let recipe = recipe(plan).unwrap();
             assert!(recipe.cli.is_some() || recipe.app.is_some(), "{plan}");
             assert!(recipe.download.starts_with("https://"));
