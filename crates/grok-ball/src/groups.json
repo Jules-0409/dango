@@ -1,0 +1,22 @@
+[
+  {
+    "key": "life",
+    "name": "生命周期",
+    "en": "Lifecycle"
+  },
+  {
+    "key": "emotion",
+    "name": "情绪反应",
+    "en": "Emotions"
+  },
+  {
+    "key": "agent",
+    "name": "代理工作状态",
+    "en": "Agent States"
+  },
+  {
+    "key": "custom",
+    "name": "自定义",
+    "en": "Custom"
+  }
+]

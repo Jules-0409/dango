@@ -1,0 +1,251 @@
+:root {
+  --rose: #C7ACAC;
+  --sage: #A3AFA3;
+  --rose-deep: #E4CBCB;
+  --sage-deep: #C2CEC2;
+  --ink: #ECE4E0;
+  --ink-2: #C8BFBA;
+  --ink-3: #9A8F8B;
+  --ink-4: #6E6562;
+  --ok: #4F9D6E;
+  --warn: #C0791A;
+  --danger: #C74A3F;
+  --f-display: "Optima", "Avenir Next", "PingFang SC", serif;
+  --f-ui: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", "PingFang SC", sans-serif;
+  --f-mono: "SF Mono", "Menlo", ui-monospace, monospace;
+
+  /* 主题语义变量 - 现代苹果极简暗色（Flat & Light） */
+  --bg-gradient:
+    radial-gradient(52% 36% at 8% 0%, rgba(199, 172, 172, 0.13), transparent 62%),
+    radial-gradient(44% 38% at 100% 100%, rgba(163, 175, 163, 0.09), transparent 58%),
+    linear-gradient(#181413, #151212);
+  --titlebar-bg: #1A1817;
+  --titlebar-border: rgba(255, 255, 255, 0.06);
+  --sidebar-bg: #141312;
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+  --panel-bg: #1D1B1A;
+  --panel-border: rgba(255, 255, 255, 0.05);
+  --row-bg: #1E1C1A;
+  --row-border: rgba(255, 255, 255, 0.05);
+  --row-hover-bg: #262321;
+  --btn-bg: rgba(255, 255, 255, 0.05);
+  --btn-border: rgba(255, 255, 255, 0.08);
+  --btn-hover-bg: rgba(255, 255, 255, 0.09);
+  --btn-hover-border: rgba(255, 255, 255, 0.15);
+  --control-bg: #181615;
+  --control-border: rgba(255, 255, 255, 0.06);
+  --card-bg: #181615;
+  --card-border: rgba(255, 255, 255, 0.05);
+  --code-bg: #121110;
+  --code-border: rgba(255, 255, 255, 0.05);
+  --input-bg: #161514;
+  --input-border: rgba(255, 255, 255, 0.08);
+  --popover-bg: #201E1D;
+  --popover-border: rgba(255, 255, 255, 0.1);
+  --popover-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.12);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
+  --nav-hover: rgba(255, 255, 255, 0.04);
+  --nav-active: rgba(199, 172, 172, 0.14);
+  --nav-active-ink: #E4CBCB;
+  --btn-primary-bg: #E4CBCB;
+  --btn-primary-ink: #2A2220;
+  --btn-primary-hover: #F0DADA;
+  --segment-active-bg: rgba(199, 172, 172, 0.16);
+  --segment-active-shadow: none;
+  /* 环样式的轨道底色（设置页预览 + widget 环共用口径） */
+  --ring-track: rgba(255, 255, 255, 0.13);
+  --ring-glint: rgba(255, 255, 255, 0.9);
+  --toast-bg: #252220;
+  --toast-border: rgba(255, 255, 255, 0.12);
+}
+
+/* 浅色主题：data-theme="light" 强制，或 data-theme="system" 跟随系统浅色。
+   只覆盖语义变量，状态色（--ok/--warn/--danger）保持不变。 */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --rose: #A97F7F;
+  --sage: #7C907C;
+  --rose-deep: #8F6565;
+  --sage-deep: #5E745E;
+  --ink: #2A2523;
+  --ink-2: #4A423E;
+  --ink-3: #6E6460;
+  --ink-4: #968C87;
+  --bg-gradient:
+    radial-gradient(50% 36% at 6% 0%, rgba(215, 188, 188, 0.55), transparent 64%),
+    radial-gradient(38% 30% at 96% 0%, rgba(220, 200, 200, 0.35), transparent 58%),
+    radial-gradient(42% 38% at 102% 100%, rgba(192, 200, 192, 0.4), transparent 60%),
+    linear-gradient(#F3EDE9, #EFE8E4);
+  --titlebar-bg: #EDE9E5;
+  --titlebar-border: rgba(0, 0, 0, 0.08);
+  --sidebar-bg: #E9E5E1;
+  --sidebar-border: rgba(0, 0, 0, 0.07);
+  --panel-bg: #FFFFFF;
+  --panel-border: rgba(0, 0, 0, 0.07);
+  --row-bg: #F6F3F0;
+  --row-border: rgba(0, 0, 0, 0.06);
+  --row-hover-bg: #EDE9E4;
+  --btn-bg: rgba(0, 0, 0, 0.04);
+  --btn-border: rgba(0, 0, 0, 0.09);
+  --btn-hover-bg: rgba(0, 0, 0, 0.07);
+  --btn-hover-border: rgba(0, 0, 0, 0.16);
+  --control-bg: #F1EEEA;
+  --control-border: rgba(0, 0, 0, 0.08);
+  --card-bg: #F1EEEA;
+  --card-border: rgba(0, 0, 0, 0.06);
+  --code-bg: #EDEAE6;
+  --code-border: rgba(0, 0, 0, 0.06);
+  --input-bg: #FFFFFF;
+  --input-border: rgba(0, 0, 0, 0.12);
+  --popover-bg: #FFFFFF;
+  --popover-border: rgba(0, 0, 0, 0.1);
+  --popover-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.16);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.28);
+  --nav-hover: rgba(0, 0, 0, 0.04);
+  --nav-active: rgba(169, 127, 127, 0.16);
+  --nav-active-ink: #8F6565;
+  --btn-primary-bg: #8F6565;
+  --btn-primary-ink: #FCFAF9;
+  --btn-primary-hover: #7C5656;
+  --segment-active-bg: rgba(169, 127, 127, 0.18);
+  --ring-track: rgba(0, 0, 0, 0.13);
+  --ring-glint: rgba(0, 0, 0, 0.38);
+  --toast-bg: #FFFFFF;
+  --toast-border: rgba(0, 0, 0, 0.12);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-theme="system"] {
+    color-scheme: light;
+    --rose: #A97F7F;
+    --sage: #7C907C;
+    --rose-deep: #8F6565;
+    --sage-deep: #5E745E;
+    --ink: #2A2523;
+    --ink-2: #4A423E;
+    --ink-3: #6E6460;
+    --ink-4: #968C87;
+    --bg-gradient:
+      radial-gradient(50% 36% at 6% 0%, rgba(215, 188, 188, 0.55), transparent 64%),
+      radial-gradient(38% 30% at 96% 0%, rgba(220, 200, 200, 0.35), transparent 58%),
+      radial-gradient(42% 38% at 102% 100%, rgba(192, 200, 192, 0.4), transparent 60%),
+      linear-gradient(#F3EDE9, #EFE8E4);
+    --titlebar-bg: #EDE9E5;
+    --titlebar-border: rgba(0, 0, 0, 0.08);
+    --sidebar-bg: #E9E5E1;
+    --sidebar-border: rgba(0, 0, 0, 0.07);
+    --panel-bg: #FFFFFF;
+    --panel-border: rgba(0, 0, 0, 0.07);
+    --row-bg: #F6F3F0;
+    --row-border: rgba(0, 0, 0, 0.06);
+    --row-hover-bg: #EDE9E4;
+    --btn-bg: rgba(0, 0, 0, 0.04);
+    --btn-border: rgba(0, 0, 0, 0.09);
+    --btn-hover-bg: rgba(0, 0, 0, 0.07);
+    --btn-hover-border: rgba(0, 0, 0, 0.16);
+    --control-bg: #F1EEEA;
+    --control-border: rgba(0, 0, 0, 0.08);
+    --card-bg: #F1EEEA;
+    --card-border: rgba(0, 0, 0, 0.06);
+    --code-bg: #EDEAE6;
+    --code-border: rgba(0, 0, 0, 0.06);
+    --input-bg: #FFFFFF;
+    --input-border: rgba(0, 0, 0, 0.12);
+    --popover-bg: #FFFFFF;
+    --popover-border: rgba(0, 0, 0, 0.1);
+    --popover-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+    --scrollbar-thumb: rgba(0, 0, 0, 0.16);
+    --scrollbar-thumb-hover: rgba(0, 0, 0, 0.28);
+    --nav-hover: rgba(0, 0, 0, 0.04);
+    --nav-active: rgba(169, 127, 127, 0.16);
+    --nav-active-ink: #8F6565;
+    --btn-primary-bg: #8F6565;
+    --btn-primary-ink: #FCFAF9;
+    --btn-primary-hover: #7C5656;
+    --segment-active-bg: rgba(169, 127, 127, 0.18);
+    --ring-track: rgba(0, 0, 0, 0.13);
+    --ring-glint: rgba(0, 0, 0, 0.38);
+    --toast-bg: #FFFFFF;
+    --toast-border: rgba(0, 0, 0, 0.12);
+  }
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  cursor: default;
+}
+body {
+  -webkit-user-select: none;
+}
+/* Code / URL / config snippets are the only copy targets — they get text-select */
+code, pre, .code-block, .config-snippet, .row-err-msg, .url-text {
+  -webkit-user-select: text;
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+  display: inline-block;
+}
+.dot.ok, .dot.available {
+  background: var(--ok);
+  box-shadow: 0 0 6px rgba(79, 157, 110, 0.5);
+}
+.dot.warn, .dot.cooling {
+  background: var(--warn);
+  box-shadow: 0 0 6px rgba(192, 121, 26, 0.5);
+}
+.dot.disabled {
+  background: var(--ink-4);
+  box-shadow: none;
+}
+.dot.bad, .dot.error {
+  background: var(--danger);
+  box-shadow: 0 0 6px rgba(199, 74, 63, 0.5);
+}
+
+/* 环样式预览（ringPreviewSVG 输出的 SVG 用）：轨道色吃主题变量，流光转圈
+   尊重 prefers-reduced-motion。 */
+.rp-trk {
+  fill: none;
+  stroke: var(--ring-track);
+}
+.rp-trk-fill {
+  fill: var(--ring-track);
+}
+.rp-comet {
+  fill: none;
+  /* 白光在浅色玻璃上像缺口，浅色下用压深的光（同 widget 原生流光） */
+  stroke: var(--ring-glint);
+  stroke-linecap: round;
+  transform-origin: 29px 29px;
+  animation: rp-orbit 3.6s linear infinite;
+}
+@keyframes rp-orbit {
+  from { transform: rotate(-90deg); }
+  to { transform: rotate(270deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rp-comet { animation: none; }
+}

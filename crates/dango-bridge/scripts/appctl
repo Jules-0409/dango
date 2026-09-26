@@ -1,0 +1,207 @@
+#!/bin/bash
+#
+# appctl —— 把桌面壳（AntigravityBridge.app）做成 launchd 常驻（自用，只支持 macOS）。
+#
+#   scripts/appctl build               组装 .app（等价 scripts/assemble-app.sh）
+#   scripts/appctl install             写 plist + 注册到 launchd（登录自启、挂了自动拉起）
+#   scripts/appctl install --takeover  端口被别的东西占着时先让它让位
+#   scripts/appctl uninstall           注销并删掉 plist
+#   scripts/appctl start|stop          起 / 停（stop 是注销，KeepAlive 不会把它拉回来）
+#   scripts/appctl restart             kickstart -k（面板上的「重启服务」等价于它）
+#   scripts/appctl status              进程号、端口、健康检查、最近几行日志
+#   scripts/appctl logs                tail -f 日志
+#   scripts/appctl open                打开面板
+#
+# 要占同一个端口（默认 8050）时得先让位：`install --takeover` 认出占端口的是**别人注册的
+# launchd job** 时会去 `launchctl bootout` 它（kill 会被 KeepAlive 拉回来），是野进程才 kill。
+#
+# 为什么用 launchd 而不是 nohup：面板上的「重启服务」要让进程敢退出 ——
+# 退了必须有人把它拉回来，这件事只有 launchd 干得了。
+#
+set -euo pipefail
+
+LABEL="local.antigravity-bridge.app"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TEMPLATE="$ROOT/scripts/$LABEL.plist"
+PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
+DOMAIN="gui/$(id -u)"
+PORT="${BRIDGE_PORT:-8050}"
+APP="$ROOT/target/AntigravityBridge.app"
+BIN="$APP/Contents/MacOS/antigravity-app"
+# 日志放 ~/Library/Logs，不放仓库里：早先仓库在 ~/Desktop 下，macOS 的 TCC 不让 launchd
+# 拉起的进程碰桌面目录（连打开 stdout 文件都被拒），放在 Desktop 里 job 根本起不来；
+# 现在仓库挪到了 ~/code/bridge，日志落点保持不变。
+LOG_DIR="$HOME/Library/Logs/antigravity-bridge"
+OUT_LOG="$LOG_DIR/app-out.log"
+ERR_LOG="$LOG_DIR/app-err.log"
+
+die() { echo "错误：$*" >&2; exit 1; }
+
+# 占着端口的进程，没有就输出空
+port_holder() {
+  lsof -nP -iTCP:"$PORT" -sTCP:LISTEN -t 2>/dev/null | head -1 || true
+}
+
+job_loaded() {
+  launchctl print "$DOMAIN/$LABEL" >/dev/null 2>&1
+}
+
+job_pid() {
+  # job 没加载时 launchctl print 会非 0 退出（113），这里得吞掉，不然 set -e 直接崩
+  launchctl print "$DOMAIN/$LABEL" 2>/dev/null | awk '/^\tpid = /{print $3; exit}' || true
+}
+
+# bootout 之后 job 不是立刻就没了，紧接着 bootstrap 会以 "5: Input/output error" 失败（实测踩过）。
+wait_unloaded() {
+  for _ in $(seq 1 25); do
+    job_loaded || return 0
+    sleep 0.2
+  done
+  return 1
+}
+
+bootout_job() {
+  job_loaded || return 0
+  launchctl bootout "$DOMAIN/$LABEL" >/dev/null 2>&1 || true
+  wait_unloaded || die "注销之后 launchd 里还挂着这个 job，先看看 launchctl print $DOMAIN/$LABEL"
+}
+
+bootstrap_job() {
+  job_loaded && return 0
+  if ! launchctl bootstrap "$DOMAIN" "$PLIST" 2>/dev/null; then
+    # 第一次失败重试一次：launchd 偶尔在刚注销完时给 EIO，等一下就好
+    sleep 1
+    launchctl bootstrap "$DOMAIN" "$PLIST"
+  fi
+}
+
+write_plist() {
+  mkdir -p "$HOME/Library/LaunchAgents" "$LOG_DIR"
+  [ -f "$TEMPLATE" ] || die "找不到 plist 模板：$TEMPLATE"
+  # 占位符替换（用 | 当分隔符：路径里有 /）
+  sed -e "s|__REPO__|$ROOT|g" -e "s|__HOME__|$HOME|g" -e "s|__PORT__|$PORT|g" \
+    "$TEMPLATE" >"$PLIST"
+  plutil -lint "$PLIST" >/dev/null || die "plist 写坏了（plutil -lint 不过）"
+}
+
+wait_healthy() {
+  for _ in $(seq 1 60); do
+    if curl -fsS --max-time 1 "http://127.0.0.1:$PORT/healthz" >/dev/null 2>&1; then
+      echo "桥在跑：http://127.0.0.1:$PORT/（面板；托盘图标在菜单栏）"
+      return 0
+    fi
+    sleep 0.5
+  done
+  echo "等健康检查超时。" >&2
+  launchctl print "$DOMAIN/$LABEL" 2>/dev/null | grep -E "^\s+(state|last exit code) = " >&2 || true
+  # launchd 的拒绝理由只写在系统日志里（例如「Service could not initialize …」）
+  log show --last 2m --style compact --predicate "eventMessage CONTAINS \"$LABEL\"" 2>/dev/null \
+    | grep -E "Could not initialize|deny\(1\)" | tail -3 >&2 || true
+  echo "进程日志：$ERR_LOG" >&2
+  tail -n 20 "$ERR_LOG" 2>/dev/null >&2 || true
+  echo "提示：端口被别的进程占着、或 .app 还是旧的时候，进程会在任何窗口出来之前如实退出。" >&2
+  return 1
+}
+
+cmd_build() {
+  [ -x "$ROOT/scripts/assemble-app.sh" ] || die "找不到 scripts/assemble-app.sh"
+  "$ROOT/scripts/assemble-app.sh"
+}
+
+cmd_install() {
+  local takeover=""
+  [ "${1:-}" = "--takeover" ] && takeover=1
+  [ -x "$BIN" ] || die "还没组装 .app（$BIN 不在）：先 scripts/appctl build 或 scripts/assemble-app.sh"
+  write_plist
+
+  local holder
+  holder="$(port_holder)"
+  if [ -n "$holder" ] && [ "$(job_pid)" != "$holder" ]; then
+    if [ -z "$takeover" ]; then
+      die "端口 $PORT 被进程 $holder 占着。停掉它再 install，或者 install --takeover 让本脚本替你退掉它。"
+    fi
+    # launchd 拉起的进程杀了会被 KeepAlive 立刻拉回来：能认出是哪个 job 就先 bootout 它
+    local owner
+    owner="$(launchctl list 2>/dev/null | awk -v pid="$holder" '$1 == pid {print $3}')" || true
+    if [ -n "${owner:-}" ] && [ "$owner" != "$LABEL" ]; then
+      echo "让位：先停掉占着端口的 job ${owner}（回头要它自己 launchctl bootstrap 回来）"
+      launchctl bootout "$DOMAIN/$owner" >/dev/null 2>&1 || true
+      for _ in $(seq 1 25); do [ -z "$(port_holder)" ] && break; sleep 0.2; done
+    fi
+    holder="$(port_holder)"
+    if [ -n "$holder" ] && [ "$(job_pid)" != "$holder" ]; then
+      kill "$holder" || die "杀不掉进程 $holder"
+      for _ in $(seq 1 20); do [ -z "$(port_holder)" ] && break; sleep 0.2; done
+      [ -z "$(port_holder)" ] ||
+        die "端口 $PORT 还被 $holder 占着（可能是别的 launchd job 拉起来的：先 launchctl bootout 它）"
+    fi
+  fi
+
+  job_loaded && bootout_job || true
+  bootstrap_job
+  launchctl enable "$DOMAIN/$LABEL"
+  echo "已注册：$PLIST"
+  wait_healthy
+}
+
+cmd_uninstall() {
+  bootout_job || true
+  rm -f "$PLIST"
+  echo "已注销并删除 $PLIST"
+}
+
+cmd_start() {
+  [ -f "$PLIST" ] || die "还没有装：先 scripts/appctl install"
+  if job_loaded; then echo "已经在跑（pid $(job_pid)）"; return 0; fi
+  bootstrap_job
+  wait_healthy
+}
+
+cmd_stop() {
+  if ! job_loaded; then echo "本来就没在跑"; return 0; fi
+  # bootout 而不是 kill：KeepAlive=true 时杀掉会被立刻拉回来
+  bootout_job
+  echo "已停（注销了 job；重启用 scripts/appctl start）"
+}
+
+cmd_restart() {
+  [ -f "$PLIST" ] || die "还没有装：先 scripts/appctl install"
+  if job_loaded; then
+    launchctl kickstart -k "$DOMAIN/$LABEL"
+  else
+    bootstrap_job
+  fi
+  wait_healthy
+}
+
+cmd_status() {
+  local pid
+  pid="$(job_pid)"
+  if [ -n "$pid" ]; then echo "launchd 状态：在跑（pid ${pid}）"; else echo "launchd 状态：没在跑"; fi
+  local holder
+  holder="$(port_holder)"
+  if [ -n "$holder" ]; then
+    echo "端口 ${PORT}：${holder} 在听 $([ "$holder" = "$pid" ] && echo '(就是它)' || echo '(不是上面这个进程，可能是别的桥)' )"
+  else
+    echo "端口 ${PORT}：没人听"
+  fi
+  if curl -fsS --max-time 2 "http://127.0.0.1:$PORT/version" 2>/dev/null; then echo; fi
+  echo "日志：$ERR_LOG"
+  tail -n 5 "$ERR_LOG" 2>/dev/null || true
+}
+
+case "${1:-}" in
+  build)     cmd_build ;;
+  install)   shift; cmd_install "$@" ;;
+  uninstall) cmd_uninstall ;;
+  start)     cmd_start ;;
+  stop)      cmd_stop ;;
+  restart)   cmd_restart ;;
+  status)    cmd_status ;;
+  logs)      tail -n 40 -f "$ERR_LOG" "$OUT_LOG" ;;
+  open)      open "http://127.0.0.1:$PORT/" ;;
+  *)
+    sed -n '2,22p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    exit 1
+    ;;
+esac

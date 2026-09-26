@@ -1,0 +1,41 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/dango-lib",
+    "crates/dango-bridge",
+    "crates/cursor-bridge",
+    "crates/grok-ball",
+    "crates/dango-widget",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "http2", "stream"] }
+thiserror = "2"
+async-trait = "0.1"
+futures-util = "0.3"
+uuid = { version = "1", features = ["v4"] }
+memchr = "2"
+sha2 = "0.10"
+axum = { version = "0.8", features = ["http1", "http2"] }
+hyper = { version = "1", features = ["server", "http1", "http2"] }
+hyper-util = { version = "0.1", features = ["server", "server-auto", "tokio"] }
+bytes = "1"
+http-body-util = "0.1"
+base64 = "0.22"
+rusqlite = { version = "0.32", features = ["bundled"] }
+aes = "0.8"
+ghash = "0.5"
+ctr = "0.9"
+
+[profile.release]
+opt-level = 2
+strip = true
+lto = true
+codegen-units = 1

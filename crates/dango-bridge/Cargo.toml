@@ -1,0 +1,42 @@
+[package]
+name = "dango-bridge"
+description = "Antigravity 上游桥核心（从 antigravity-bridge/core 整体搬入）"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "dango-bridge"
+path = "src/bin/bridge.rs"
+
+[[bin]]
+name = "dango-smoke"
+path = "src/bin/smoke.rs"
+
+[build-dependencies]
+# build.rs 只用 std（git sha/时间戳），无需 tauri-build
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+futures-util = { workspace = true }
+uuid = { workspace = true }
+memchr = { workspace = true }
+sha2 = { workspace = true }
+tokio = { workspace = true }
+reqwest = { workspace = true }
+axum = { workspace = true }
+# Qoder 上游（纯 Rust，跨平台）：私有 base64 / COSY 的 AES + RSA + MD5
+base64 = "0.22"
+md-5 = "0.10"
+aes = "0.8"
+cbc = "0.1"
+rsa = { version = "0.9", features = ["getrandom"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync", "net"] }
+tower = { version = "0.5", features = ["util"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+libc = "0.2"

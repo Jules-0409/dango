@@ -1,0 +1,13 @@
+[package]
+name = "grok-ball"
+version.workspace = true
+edition.workspace = true
+license = "MIT"
+description = "Backend-agnostic standalone SVG emotion ball engine ported from grok-ball.js"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

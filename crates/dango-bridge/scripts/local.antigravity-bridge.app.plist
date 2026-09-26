@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  桌面壳（antigravity-app）的 launchd 模板。占位符由 `scripts/appctl install` 替换：
+
+    __REPO__   仓库绝对路径（.app 在 <repo>/target/AntigravityBridge.app，先跑 assemble-app.sh）
+    __HOME__   家目录（日志落 ~/Library/Logs）
+    __PORT__   端口，默认 8050（BRIDGE_PORT 可覆盖）
+
+  为什么日志不放仓库里：仓库早先在 ~/Desktop 下，macOS 的 TCC 不让 launchd 拉起的进程碰
+  桌面目录（连打开 stdout 文件都会被拒），放进去 job 根本起不来（早先那份 Node 实现上实测
+  踩过）；现在仓库挪到了 ~/code/bridge，日志落点保持不变。
+  因为指向的是 .app 里的可执行文件，进程认得出自己是打包态，requests.jsonl 也落 ~/Library/Logs。
+
+  手工装载（不用 appctl 的话）：
+    cp 本文件 ~/Library/LaunchAgents/local.antigravity-bridge.app.plist   # 先替换三个占位符
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/local.antigravity-bridge.app.plist
+    launchctl bootout  gui/$(id -u)/local.antigravity-bridge.app
+
+  Label 和 JS 版（local.antigravity-bridge）不同名，两个可以同时挂（对拍时各占一个端口）；
+  桥的「重启服务」按钮认这两个 Label，装在这儿点它会退出、由 KeepAlive 拉回来。
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>local.antigravity-bridge.app</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>__REPO__/target/AntigravityBridge.app/Contents/MacOS/antigravity-app</string>
+		<string>--port=__PORT__</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<!-- 桌面壳挂着托盘图标，挂了拉起来等于回到原样；比「挂了就没托盘了」好 -->
+	<key>KeepAlive</key>
+	<true/>
+	<key>ThrottleInterval</key>
+	<integer>10</integer>
+	<!-- 托盘 + 面板要有响应，按交互型进程调度（Background 会被降 QoS） -->
+	<key>ProcessType</key>
+	<string>Interactive</string>
+	<!-- 只在图形登录会话里跑（多用户机器上别在别的会话里冒出来） -->
+	<key>LimitLoadToSessionType</key>
+	<string>Aqua</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<!-- 双保险：launchd 自己会设 XPC_SERVICE_NAME=${LABEL}，面板的「重启服务」
+		     靠它判断「我退了有人拉回来」 -->
+		<key>BRIDGE_ALLOW_RESTART</key>
+		<string>1</string>
+	</dict>
+	<key>StandardOutPath</key>
+	<string>__HOME__/Library/Logs/antigravity-bridge/app-out.log</string>
+	<key>StandardErrorPath</key>
+	<string>__HOME__/Library/Logs/antigravity-bridge/app-err.log</string>
+</dict>
+</plist>

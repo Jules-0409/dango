@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>Dango 设置</title>
+<link rel="stylesheet" href="common.css">
+<link rel="stylesheet" href="settings.css">
+</head>
+<body>
+<!-- 顶栏（原生标题栏已有「dango 设置」，这里不再重复印一遍） -->
+<div class="titlebar">
+  <span id="updateTime" class="update-time">—</span>
+  <div class="titlebar-actions">
+    <span id="saveStatus" class="save-status"></span>
+    <button id="refreshBtn" class="glass-btn btn-xs" title="立即刷新数据">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <path d="M23 4v6h-6"/>
+        <path d="M1 20v-6h6"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+      <span>立即刷新</span>
+    </button>
+  </div>
+</div>
+
+<!-- 主体 -->
+<div class="settings-main">
+  <!-- 侧边栏 -->
+  <aside class="sidebar">
+    <button class="nav-item active" data-tab="balls">
+      <span class="nav-icon icon-balls"><svg viewBox="0 0 14 14" width="13" height="13"><circle cx="7" cy="7" r="5.4" fill="currentColor"/><ellipse cx="5.3" cy="6.5" rx="0.8" ry="1.5" fill="#1c1a19"/><ellipse cx="8.7" cy="6.5" rx="0.8" ry="1.5" fill="#1c1a19"/></svg></span>
+      <span>小球</span>
+    </button>
+    <button class="nav-item" data-tab="tokens">
+      <span class="nav-icon icon-tokens"><svg viewBox="0 0 14 14" width="11" height="11" fill="currentColor"><rect x="1.5" y="7" width="2.6" height="5" rx="1"/><rect x="5.7" y="3.5" width="2.6" height="8.5" rx="1"/><rect x="9.9" y="5.5" width="2.6" height="6.5" rx="1"/></svg></span>
+      <span>Token 记录</span>
+    </button>
+    <div class="nav-section-title">反代服务</div>
+    <div id="proxyNav"></div>
+  </aside>
+
+  <!-- 内容区 -->
+  <main class="content-pane" id="mainPane">
+    <!-- 动态渲染 -->
+  </main>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="common.js"></script>
+<script src="bridge.js"></script>
+<script src="grok-ball.js"></script>
+<script src="settings.js"></script>
+</body>
+</html>

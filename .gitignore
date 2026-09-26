@@ -1,0 +1,10 @@
+src-tauri/target
+src-tauri/gen
+target/
+logs/
+tmp/
+.env
+.DS_Store
+*.log
+site/dist/
+dist/
