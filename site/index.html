@@ -342,6 +342,12 @@
   pre .c{color:#8E827F;}
   .req{display:grid;gap:10px;font-size:13.5px;color:var(--ink-2);line-height:1.7;}
   .req b{color:var(--ink);font-weight:600;}
+  .req a,.steps a{color:var(--sage-deep);}
+  .req code{font-family:var(--f-mono);font-size:12px;background:var(--etch);padding:1px 6px;border-radius:6px;}
+  .dl{padding:22px 24px;border-radius:22px;background:var(--etch);box-shadow:inset 0 0 0 1px var(--etch-edge);}
+  .dl-btns{display:flex;flex-wrap:wrap;gap:10px;}
+  .steps{margin:18px 0 0 18px;display:grid;gap:10px;font-size:13.5px;color:var(--ink-2);line-height:1.75;}
+  .steps b{color:var(--ink);font-weight:600;}
 
   footer{padding:40px 0 70px;text-align:center;}
   footer .by{font-family:var(--f-mono);font-size:11px;letter-spacing:.18em;color:var(--ink-3);}
@@ -365,7 +371,7 @@
   <a class="l opt" href="#mood">看脸色</a>
   <a class="l opt" href="#add">加小球</a>
   <a class="l opt" href="#tokens">Token</a>
-  <a class="l" href="#oss">开源</a>
+  <a class="l" href="#oss">下载</a>
   <a class="l" href="https://www.liujufu.com">首页 ↗</a>
 </nav>
 
@@ -383,8 +389,8 @@
         所以做了这串团子挂在屏幕边上：一颗是一家，<b>额度多它就笑</b>，快没了就垮脸，查不到干脆哭给你看。
       </p>
       <div class="cta">
-        <a class="btn btn-primary" id="ghBtn" href="https://github.com/Jules-0409/dango">GitHub ↗</a>
-        <a class="btn btn-ghost" href="#oss">怎么装 ↓</a>
+        <a class="btn btn-primary" href="#oss">下载 Mac 版 ↓</a>
+        <a class="btn btn-ghost" id="ghBtn" href="https://github.com/Jules-0409/dango">GitHub ↗</a>
       </div>
     </div>
   </div>
@@ -540,18 +546,24 @@
 
 <!-- ═══════════ 开源 ═══════════ -->
 <section id="oss" class="wrap">
-  <h2>代码在 GitHub，<em>MIT 协议</em></h2>
-  <p class="sec-sub" id="ossText">仓库在 <a href="https://github.com/Jules-0409/dango">github.com/Jules-0409/dango</a>。有问题提 issue；你常用的那家要是还没有，欢迎做一颗新球发 PR。</p>
+  <h2>下下来，<em>拖进应用程序就能用</em></h2>
+  <p class="sec-sub">Apple Silicon 的 Mac，macOS 13 以上。免费，代码在 <a href="https://github.com/Jules-0409/dango">GitHub</a>（MIT）。</p>
   <div class="oss">
-    <pre><span class="c"># 从源码构建（Rust stable，macOS）</span>
-git clone <span id="repoUrl">https://github.com/Jules-0409/dango.git</span>
-cd dango
-cargo build --workspace --release
-./target/release/dango</pre>
+    <div class="dl">
+      <div class="dl-btns">
+        <a class="btn btn-primary" href="download/Dango-0.1.0-macos-arm64.zip" download>下载 Dango 0.1.0 · 4.8 MB</a>
+        <a class="btn btn-ghost" href="https://github.com/Jules-0409/dango/releases/latest">去 GitHub 下 ↗</a>
+      </div>
+      <ol class="steps">
+        <li>解压，把 <b>Dango.app</b> 拖进「应用程序」。</li>
+        <li>第一次打开会被系统拦下来：我没交苹果的开发者年费，做不了公证。去「系统设置 → 隐私与安全性」往下拉，点「仍要打开」就好。</li>
+        <li>想开机自己启动的话：系统设置 → 通用 → 登录项，把 Dango 加进去。</li>
+      </ol>
+    </div>
     <div class="req">
-      <div><b>系统</b>　macOS，我自己在 Apple Silicon 上天天用</div>
-      <div><b>依赖</b>　装好 Rust。想让哪颗球有数，就装上那家的 App 或命令行并登录</div>
-      <div><b>设置</b>　菜单栏点「设置…」：排顺序、换形状颜色、加球、看 Token 账</div>
+      <div><b>设置</b>　点程序坞里的 Dango，或菜单栏图标 →「设置…」：排顺序、换形状颜色、加球、看 Token 账。关掉设置，程序坞图标就收起来</div>
+      <div><b>有数</b>　想让哪颗球有数，就装上那家的 App 或命令行并登录</div>
+      <div><b>源码</b>　<a href="https://github.com/Jules-0409/dango">github.com/Jules-0409/dango</a>，装好 Rust 以后 <code>cargo build --release</code>。有问题提 issue，想给你常用的那家做颗新球，欢迎发 PR</div>
     </div>
   </div>
 </section>
