@@ -132,6 +132,7 @@ const CRED_PLANS = [
   { id:'devin',   name:'Devin',   hint:'CLI token' },
   { id:'factory', name:'Factory', hint:'access token' },
   { id:'dim',     name:'DimAgent', hint:'access token（DimAgent 登录态）' },
+  { id:'grok',    name:'Grok Build', hint:'access token（grok 的登录态）' },
 ];
 // 「凭据」面板支持手动凭据的套餐 id（其它套餐不是单 token 形态）
 const CRED_SUPPORTED = new Set(CRED_PLANS.map(p => p.id));
@@ -144,6 +145,7 @@ const CONNECT_GUIDE = {
   factory:     '在 Factory App 里重新登录',
   cursor:      '在 Cursor App 里重新登录',
   dim:         '打开一次 DimAgent，它会自己续上登录',
+  grok:        '终端里跑一次 grok，它会自己续上登录',
   antigravity: '账号池归反代桥管——去「Gemini 反代」页看账号健康',
 };
 
@@ -235,7 +237,7 @@ function renderBallsTab(){
     order = order.filter(id => plansMap.has(id));
   }
   if(order.length === 0){
-    order = ['claude', 'haze', 'antigravity', 'devin', 'cursor', 'factory', 'dim'];
+    order = ['claude', 'haze', 'antigravity', 'devin', 'cursor', 'factory', 'dim', 'grok'];
   }
   currentSettings.order = order;
 
@@ -650,7 +652,7 @@ function renderBallsTab(){
   bindAddBallPanel();
   bindConnectButtons();
   $('#resetDefaultsBtn').addEventListener('click', () => {
-    currentSettings.order = ['claude', 'haze', 'antigravity', 'devin', 'cursor', 'factory', 'dim'];
+    currentSettings.order = ['claude', 'haze', 'antigravity', 'devin', 'cursor', 'factory', 'dim', 'grok'];
     currentSettings.balls = {
       claude: { shape: 'star' },
       haze: { shape: 'blob' },
@@ -1241,13 +1243,14 @@ const BUILTIN_SOURCES = [
   ['cursor', 'Cursor', 'Cursor App 登录态 → cursor.com usage-summary，外加 Grok Bot 周额度'],
   ['factory', 'Factory', 'Factory App 存在钥匙串里的登录态 → Factory 额度接口（按池分组）'],
   ['dim', 'DimAgent', 'DimAgent 自己的登录（~/.dimcode/v2/auth.json）→ dimagent.cn/api/me/usage（订阅点数、联网搜索次数）'],
+  ['grok', 'Grok Build', 'Grok Build 自己的登录（~/.grok/auth.json）→ SuperGrok 本周额度，按 Chat / Voice / Build 分开'],
 ];
 
 // 一键登录：调各家自己的登录（官方 CLI 在终端里跑，或打开它的 App），我们只读登录结果。
-const CONNECTABLE = new Set(['claude', 'haze', 'cursor', 'devin', 'factory', 'dim']);
+const CONNECTABLE = new Set(['claude', 'haze', 'cursor', 'devin', 'factory', 'dim', 'grok']);
 const CONNECT_LABEL = {
   claude: '打开 Claude', haze: '打开 Haze 登录', cursor: 'cursor-agent login',
-  devin: 'devin auth login', factory: '打开 Factory 登录', dim: '打开 DimAgent',
+  devin: 'devin auth login', factory: '打开 Factory 登录', dim: '打开 DimAgent', grok: 'grok login',
 };
 
 function renderConnectPanel(plansMap){
@@ -1504,6 +1507,7 @@ const TOKEN_SOURCES = {
   cursor: { label: 'Cursor', color: () => PALETTE.cursor },
   devin: { label: 'Devin', color: () => PALETTE.devin },
   dim: { label: 'DimAgent', color: () => PALETTE.dim },
+  grok: { label: 'Grok Build', color: () => PALETTE.grok },
 };
 const TOKEN_UNREADABLE = 'Devin 的 token 是本机会话库（sessions.db）里每轮推理的记账，不是官方用量口径。Cursor 的用量取自它官方的用量明细（App、CLI Agent、Grok Bot 都在里面，5 分钟同步一次）。Haze App 自己的用量只在它服务器上。';
 

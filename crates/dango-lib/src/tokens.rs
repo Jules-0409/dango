@@ -18,6 +18,10 @@
 //!   append-only row per agent run with `promptTokens` (cache reads included),
 //!   `completionTokens`, `cacheReadTokens`. The paying end comes from the
 //!   run's provider: DimAgent's own OAuth plan, or a custom provider's base URL.
+//! - **Grok Build** — `~/.grok/sessions/<cwd>/<session>/usage.json`, rewritten
+//!   after every turn: each turn carries `endedAt` and per-model counts
+//!   (`inputTokens` includes cache reads). The ledger remembers the last turn
+//!   booked per session.
 //!
 //! The ledger persists to `tokens.json` next to `settings.json`, so history
 //! survives the tools pruning their logs. Files are read incrementally from
@@ -39,6 +43,7 @@ pub const SOURCE_FACTORY: &str = "factory";
 pub const SOURCE_CURSOR: &str = "cursor";
 pub const SOURCE_DEVIN: &str = "devin";
 pub const SOURCE_DIM: &str = "dim";
+pub const SOURCE_GROK: &str = "grok";
 /// DimAgent's built-in provider id for its own subscription.
 const DIM_OWN_PROVIDER: &str = "dimcode-api-oauth";
 /// Route id prefix of local ports whose tokens are not kept: retired
@@ -156,6 +161,17 @@ pub struct Ledger {
     /// DimAgent's `usage_ledger` rows, booked per day under `route\u{1f}model`.
     #[serde(default)]
     dim: DimLedger,
+    /// Grok Build sessions' `usage.json`, booked per finished turn.
+    #[serde(default)]
+    grok: GrokLedger,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct GrokLedger {
+    /// session id → highest turn number booked.
+    turns: BTreeMap<String, u64>,
+    days: DayModelCounts,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -330,6 +346,7 @@ impl Ledger {
             self.scan_factory(&home.join(".factory").join("sessions")),
             self.scan_devin(&home.join(".local/share/devin/cli/sessions.db")),
             self.scan_dim(&home.join(".dimcode/v2/dimcode.sqlite")),
+            self.scan_grok(&home.join(".grok/sessions")),
             self.scan_proxy_logs(
                 "proxy:gemini",
                 "Gemini 桥",
@@ -546,6 +563,108 @@ impl Ledger {
                 .add(&counts);
         }
         Ok(scanned)
+    }
+
+    /// Grok Build keeps one directory per working dir, one per session inside,
+    /// each with a `usage.json` that is rewritten after every turn.
+    fn scan_grok(&mut self, root: &Path) -> SourceStatus {
+        let mut status = SourceStatus {
+            id: SOURCE_GROK.into(),
+            label: "Grok Build".into(),
+            found: root.is_dir(),
+            files: 0,
+            error: None,
+        };
+        let Ok(projects) = std::fs::read_dir(root) else {
+            return status;
+        };
+        let mut errors = Vec::new();
+        for project in projects.flatten() {
+            let Ok(sessions) = std::fs::read_dir(project.path()) else {
+                continue;
+            };
+            for session in sessions.flatten() {
+                let path = session.path().join("usage.json");
+                let Ok(bytes) = std::fs::read(&path) else {
+                    continue;
+                };
+                status.files += 1;
+                if let Err(error) = self.book_grok(&bytes) {
+                    let name = session.file_name().to_string_lossy().into_owned();
+                    errors.push(format!("{name}: {error}"));
+                }
+            }
+        }
+        if !errors.is_empty() {
+            status.error = Some(format!("{} 个会话读取失败：{}", errors.len(), errors[0]));
+        }
+        status
+    }
+
+    fn book_grok(&mut self, bytes: &[u8]) -> Result<(), String> {
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Usage {
+            session_id: String,
+            #[serde(default)]
+            turns: Vec<Turn>,
+        }
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Turn {
+            turn_number: u64,
+            ended_at: String,
+            #[serde(default)]
+            primary_model_id: Option<String>,
+            #[serde(flatten)]
+            counts: GrokCounts,
+            #[serde(default)]
+            model_usage: BTreeMap<String, GrokCounts>,
+        }
+        #[derive(Deserialize, Default)]
+        #[serde(rename_all = "camelCase")]
+        struct GrokCounts {
+            #[serde(default)]
+            input_tokens: u64,
+            #[serde(default)]
+            output_tokens: u64,
+            #[serde(default)]
+            cached_read_tokens: u64,
+            #[serde(default)]
+            cache_creation_tokens: u64,
+        }
+        impl GrokCounts {
+            fn counts(&self) -> Counts {
+                Counts {
+                    input: self.input_tokens.saturating_sub(self.cached_read_tokens),
+                    output: self.output_tokens,
+                    cache_read: self.cached_read_tokens,
+                    cache_write: self.cache_creation_tokens,
+                }
+            }
+        }
+        let usage: Usage = serde_json::from_slice(bytes).map_err(|error| error.to_string())?;
+        let booked = self.grok.turns.get(&usage.session_id).copied().unwrap_or(0);
+        let mut last = booked;
+        for turn in usage.turns.iter().filter(|turn| turn.turn_number > booked) {
+            let at = parse_rfc3339_ms(&turn.ended_at)
+                .ok_or_else(|| format!("endedAt 读不懂: {}", turn.ended_at))?;
+            let day = self.grok.days.entry(day_key(at)).or_default();
+            if turn.model_usage.is_empty() {
+                let model = turn
+                    .primary_model_id
+                    .clone()
+                    .unwrap_or_else(|| "grok".into());
+                day.entry(model).or_default().add(&turn.counts.counts());
+            } else {
+                for (model, counts) in &turn.model_usage {
+                    day.entry(model.clone()).or_default().add(&counts.counts());
+                }
+            }
+            last = last.max(turn.turn_number);
+        }
+        self.grok.turns.insert(usage.session_id, last);
+        Ok(())
     }
 
     fn scan_dim(&mut self, db_path: &Path) -> SourceStatus {
@@ -807,6 +926,17 @@ impl Ledger {
                 if let Some(route) = self.dim.routes.get(route_id) {
                     book(date, SOURCE_DIM, model, route, counts);
                 }
+            }
+        }
+        let grok_route = Route {
+            id: "grok".into(),
+            label: "SuperGrok 订阅".into(),
+            endpoint: None,
+            inferred: false,
+        };
+        for (date, models) in &self.grok.days {
+            for (model, counts) in models {
+                book(date, SOURCE_GROK, model, &grok_route, counts);
             }
         }
         let unknown = Route {
@@ -1134,6 +1264,7 @@ fn current_route_label(id: &str) -> Option<String> {
         "cursor" => "Cursor 订阅".into(),
         "devin" => "Devin 订阅".into(),
         "dim" => "DimAgent 订阅".into(),
+        "grok" => "SuperGrok 订阅".into(),
         _ => return None,
     };
     Some(label)
@@ -1941,6 +2072,47 @@ mod tests {
             .by_source[SOURCE_DEVIN];
         assert_eq!(today.input, 357);
         assert_eq!(today.output, 48);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Grok Build rewrites `usage.json` after each turn; only turns past the
+    /// last one booked count, and cache reads come out of `inputTokens`.
+    #[test]
+    fn grok_books_each_turn_once() {
+        let dir = std::env::temp_dir().join(format!("dango-grok-test-{}", std::process::id()));
+        let session = dir.join("%2Ftmp").join("s1");
+        std::fs::create_dir_all(&session).unwrap();
+        let turn = |n: u64, at: &str| {
+            format!(
+                r#"{{"turnNumber":{n},"endedAt":"{at}","inputTokens":100,"outputTokens":7,
+                "cachedReadTokens":60,"cacheCreationTokens":0,"primaryModelId":"grok-4.6-build",
+                "modelUsage":{{"grok-4.6-build":{{"inputTokens":100,"outputTokens":7,
+                "cachedReadTokens":60,"cacheCreationTokens":0}}}}}}"#
+            )
+        };
+        let write = |turns: &[String]| {
+            std::fs::write(
+                session.join("usage.json"),
+                format!(r#"{{"sessionId":"s1","turns":[{}]}}"#, turns.join(",")),
+            )
+            .unwrap();
+        };
+        let mut ledger = Ledger::default();
+        write(&[turn(1, "2026-09-27T01:00:00Z")]);
+        let status = ledger.scan_grok(&dir);
+        assert_eq!((status.files, status.error), (1, None));
+        write(&[
+            turn(1, "2026-09-27T01:00:00Z"),
+            turn(2, "2026-09-27T02:00:00Z"),
+        ]);
+        ledger.scan_grok(&dir);
+        ledger.scan_grok(&dir);
+        let now = parse_rfc3339_ms("2026-09-27T03:00:00Z").unwrap();
+        let report = ledger.report(now, 1, Vec::new());
+        let today = report.days[0].by_source[SOURCE_GROK];
+        assert_eq!((today.input, today.cache_read, today.output), (80, 120, 14));
+        assert_eq!(report.routes[0].id, "grok");
 
         let _ = std::fs::remove_dir_all(&dir);
     }

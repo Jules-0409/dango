@@ -6,6 +6,7 @@ const PALETTE = {
   cursor: '#C9BCA6',
   factory: '#B8A9C9',
   dim: '#DCB770',
+  grok: '#7A9BB8',
 };
 
 const PRESET_COLORS = [
@@ -31,6 +32,7 @@ const DEFAULT_SHAPE = {
   cursor: 'blob',
   factory: 'wedge',
   dim: 'cloud',
+  grok: 'drop',
 };
 
 const AVAILABLE_SHAPES = [

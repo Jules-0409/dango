@@ -11,6 +11,7 @@ const DEFAULT_ORDER: &[&str] = &[
     "cursor",
     "factory",
     "dim",
+    "grok",
 ];
 
 /// Animation pacing mode for the widget.
@@ -209,6 +210,20 @@ pub struct Settings {
 /// The built-in balls, in their default order.
 pub const BUILTIN_PLANS: &[&str] = DEFAULT_ORDER;
 
+/// Built-ins that stay hidden until the user adds them from 添加小球 (and
+/// signs in there): newer providers most people don't have.
+pub const OPT_IN_PLANS: &[&str] = &["grok"];
+
+/// An opt-in ball the user never added (absent from both `order` and
+/// `hidden`, e.g. a settings file from before it existed) starts hidden.
+fn hide_unadded_opt_ins(settings: &mut Settings) {
+    for id in OPT_IN_PLANS {
+        if !settings.order.iter().any(|x| x == id) && !settings.hidden.iter().any(|x| x == id) {
+            settings.hidden.push((*id).to_string());
+        }
+    }
+}
+
 /// A ball the user added from a template.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -265,7 +280,7 @@ impl Default for Settings {
             theme: Some(Theme::System),
             ring_mode: Some(RingMode::Plain),
             custom: Vec::new(),
-            hidden: Vec::new(),
+            hidden: OPT_IN_PLANS.iter().map(|id| (*id).to_string()).collect(),
         }
     }
 }
@@ -326,7 +341,10 @@ pub fn load_from(path: impl AsRef<Path>) -> Settings {
         }
     };
     match serde_json::from_str(&text) {
-        Ok(settings) if validate(&settings).is_ok() => settings,
+        Ok(mut settings) if validate(&settings).is_ok() => {
+            hide_unadded_opt_ins(&mut settings);
+            settings
+        }
         Ok(_) | Err(_) => {
             let _ = std::fs::rename(path, backup_path(path));
             Settings::default()
@@ -829,5 +847,24 @@ mod tests {
         assert_eq!(load_from(&path).hidden, vec!["devin".to_string()]);
         settings.hidden = vec!["custom-x".into()];
         assert!(save_to(&path, &settings).is_err());
+    }
+
+    #[test]
+    fn opt_in_balls_start_hidden_until_added() {
+        assert!(Settings::default().hidden.contains(&"grok".to_string()));
+        let dir = std::env::temp_dir().join(format!("dango-optin-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("settings.json");
+        // 旧文件：没见过 grok → 藏着
+        std::fs::write(&path, r#"{"version":1,"order":["claude"],"balls":{}}"#).unwrap();
+        assert_eq!(load_from(&path).hidden, vec!["grok".to_string()]);
+        // 从「添加小球」加过（进了 order、出了 hidden）→ 不再藏
+        std::fs::write(
+            &path,
+            r#"{"version":1,"order":["claude","grok"],"balls":{}}"#,
+        )
+        .unwrap();
+        assert!(load_from(&path).hidden.is_empty());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

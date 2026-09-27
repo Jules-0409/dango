@@ -2,6 +2,7 @@ pub mod antigravity;
 pub mod claude;
 pub mod custom;
 pub mod dim;
+pub mod grok;
 pub mod haze;
 mod probes_adapter;
 

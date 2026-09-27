@@ -19,6 +19,7 @@ pub const PALETTE: &[(&str, &str)] = &[
     ("cursor", "#C9BCA6"),
     ("factory", "#B8A9C9"),
     ("dim", "#DCB770"),
+    ("grok", "#7A9BB8"),
 ];
 
 /// Default ball shape per plan id, from `ui/common.js`.
@@ -30,6 +31,7 @@ pub const DEFAULT_SHAPE: &[(&str, &str)] = &[
     ("cursor", "blob"),
     ("factory", "wedge"),
     ("dim", "cloud"),
+    ("grok", "drop"),
 ];
 
 const EYE_COLOR: &str = "#F5F2ED";

@@ -13,7 +13,7 @@ const SERVICE: &str = "dango";
 /// antigravity 是账号池——都不是一条 token 能接的，走引导不接槽。
 /// 用户自己加的小球（`custom-*`）的 API Key 也放这里。
 pub fn supports(plan_id: &str) -> bool {
-    matches!(plan_id, "haze" | "devin" | "factory" | "dim")
+    matches!(plan_id, "haze" | "devin" | "factory" | "dim" | "grok")
         || crate::settings::is_custom_plan_id(plan_id)
 }
 

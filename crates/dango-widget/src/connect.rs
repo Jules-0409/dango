@@ -32,6 +32,11 @@ pub fn recipe(plan_id: &str) -> Option<Recipe> {
             app: Some("DimAgent"),
             download: "https://dimagent.cn",
         },
+        "grok" => Recipe {
+            cli: Some(("grok", &["login"])),
+            app: None,
+            download: "https://x.ai/cli",
+        },
         "haze" => Recipe {
             cli: None,
             app: Some("Haze"),
@@ -67,6 +72,7 @@ fn find_cli(name: &str, home: &Path) -> Option<PathBuf> {
         PathBuf::from("/usr/local/bin"),
         home.join(".cursor/bin"),
         home.join(".devin/bin"),
+        home.join(".grok/bin"),
     ]
     .into_iter()
     .map(|dir| dir.join(name))
