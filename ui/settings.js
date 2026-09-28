@@ -9,6 +9,8 @@ let currentCredentials = {}; // planId -> bool，手动凭据槽的占用图
 
 const $ = s => document.querySelector(s);
 
+registerExtraShapes();
+
 // 行内「或手动粘凭据 →」锚点：跳到凭据区并直接展开对应的粘贴表单。
 // 和 popover 开关一样走 document 级委托——行是每次 render 重建的。
 document.addEventListener('click', (e) => {
@@ -304,7 +306,7 @@ function renderBallsTab(){
   if(ringGridEl){
     const firstPlan = order[0];
     const ringColor = currentSettings.balls?.[firstPlan]?.color
-      || PALETTE[firstPlan] || '#B9B0A4';
+      || defaultColorFor(firstPlan, currentSettings);
     const currentRingMode = RING_MODES.some(m => m.id === currentSettings.ringMode)
       ? currentSettings.ringMode
       : 'plain';
@@ -368,8 +370,9 @@ function renderBallsTab(){
       pending: true,
     };
 
-    const currentShape = currentSettings.balls?.[planId]?.shape || DEFAULT_SHAPE[planId] || 'blob';
-    const currentColor = currentSettings.balls?.[planId]?.color || PALETTE[planId] || '#B9B0A4';
+    const currentShape = currentSettings.balls?.[planId]?.shape || defaultShapeFor(planId, currentSettings);
+    const currentColor = currentSettings.balls?.[planId]?.color || defaultColorFor(planId, currentSettings);
+    const rowShapes = shapesFor(planId, currentSettings);
     const pct = plan.ok ? plan.remainingPercent : null;
     const pctText = plan.pending ? '待拉取' : ((plan.ok && pct != null) ? pct.toFixed(0) + '%' : (plan.ok ? '—' : '异常'));
     const pctColor = plan.pending ? 'var(--ink-4)' : colorFor(pct, plan.ok);
@@ -382,7 +385,7 @@ function renderBallsTab(){
     // 形态选择：一个 popover，不再把 8 种形态平铺进每一行。
     // 平铺时每行要塞 8 个 mini 球 + 8 个文字标签，行高压到 54px 还挤成一团；
     // 收起来后行内只剩一颗当前形态的徽章，点一下才展开全部选项。
-    const shapePopoverHtml = AVAILABLE_SHAPES.map(s => `
+    const shapePopoverHtml = rowShapes.map(s => `
       <button class="shape-option ${currentShape === s.id ? 'active' : ''}" data-shape="${s.id}" title="${s.label}">
         <span class="mini-ball-box" data-mini="${s.id}"></span>
         <span>${s.label}</span>
@@ -615,7 +618,7 @@ function renderBallsTab(){
         sb.classList.toggle('active', sb.dataset.color.toUpperCase() === newHex.toUpperCase());
       });
 
-      const activeShape = currentSettings.balls[planId]?.shape || DEFAULT_SHAPE[planId] || 'blob';
+      const activeShape = currentSettings.balls[planId]?.shape || defaultShapeFor(planId, currentSettings);
       updateBallPreview(activeShape, newHex);
       triggerSaveSettings();
     }
@@ -635,7 +638,7 @@ function renderBallsTab(){
 
     resetColorBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const defaultCol = PALETTE[planId] || '#B9B0A4';
+      const defaultCol = defaultColorFor(planId, currentSettings);
       if(currentSettings.balls?.[planId]){
         delete currentSettings.balls[planId].color;
       }
@@ -1295,7 +1298,7 @@ function bindConnectButtons(){
     });
   });
   $('#mainPane').querySelectorAll('[data-remove]').forEach(btn => {
-    btn.addEventListener('click', () => removeBuiltinBall(btn.dataset.remove));
+    btn.addEventListener('click', () => removeBuiltinBall(btn.dataset.remove, btn));
   });
   $('#mainPane').querySelectorAll('[data-goto]').forEach(btn => {
     btn.addEventListener('click', () => { location.hash = btn.dataset.goto; });
@@ -1341,9 +1344,26 @@ async function addBuiltinBall(id){
   renderBallsTab();
 }
 
-async function removeBuiltinBall(id){
+// 设置窗口是 WKWebView，没挂 UIDelegate，confirm() 永远返回 false（按钮点了没反应）。
+// 危险操作改成按钮上点两下：第一下变红「确认…」并提示后果，3 秒内再点才执行。
+function armedTwice(btn, label, hint){
+  if(btn.dataset.armed) return true;
+  const orig = btn.textContent;
+  btn.dataset.armed = '1';
+  btn.textContent = label;
+  btn.classList.add('is-armed');
+  showToast(hint);
+  setTimeout(() => {
+    delete btn.dataset.armed;
+    btn.textContent = orig;
+    btn.classList.remove('is-armed');
+  }, 3000);
+  return false;
+}
+
+async function removeBuiltinBall(id, btn){
   const name = (BUILTIN_SOURCES.find(([pid]) => pid === id) || [])[1] || id;
-  if(!confirm(`从胶囊上移除「${name}」？登录状态不动，随时可以在「添加小球」里加回来。`)) return;
+  if(!armedTwice(btn, '确认移除', `再点一次移除「${name}」：登录状态不动，随时可以在「添加小球」里加回来`)) return;
   const next = structuredClone(currentSettings);
   next.hidden = [...new Set([...hiddenPlans(), id])];
   try{
@@ -1423,7 +1443,7 @@ function bindAddBallPanel(){
     }
     const del = e.target.closest('.custom-del');
     if(del){
-      await removeCustomBall(del.dataset.id);
+      await removeCustomBall(del.dataset.id, del);
       return;
     }
     if(e.target.closest('#addBallSave')) await addCustomBall();
@@ -1451,10 +1471,11 @@ async function addCustomBall(){
   const id = nextCustomId(addBallKind);
   const used = new Set(Object.values(currentSettings.balls || {}).map(b => b.color).filter(Boolean)
     .concat(Object.values(PALETTE)));
-  const color = PRESET_COLORS.find(c => !used.has(c)) || PRESET_COLORS[0];
+  // 有专属默认（DeepSeek 鲸鱼蓝）的模板不写死颜色，交给 KIND_DEFAULTS
+  const color = KIND_DEFAULTS[addBallKind] ? null : (PRESET_COLORS.find(c => !used.has(c)) || PRESET_COLORS[0]);
   const next = structuredClone(currentSettings);
   next.custom = [...customPlans(), { id, kind: addBallKind, name, ...(budget ? { budget } : {}) }];
-  next.balls = { ...(next.balls || {}), [id]: { color } };
+  next.balls = { ...(next.balls || {}), [id]: color ? { color } : {} };
   next.order = [...(next.order || []).filter(x => x !== id), id];
   const btn = $('#addBallSave');
   btn.disabled = true;
@@ -1474,10 +1495,10 @@ async function addCustomBall(){
   renderBallsTab();
 }
 
-async function removeCustomBall(id){
+async function removeCustomBall(id, btn){
   const plan = customPlans().find(c => c.id === id);
   if(!plan) return;
-  if(!confirm(`删除「${plan.name}」？它的 API Key 也会从钥匙串里删掉。`)) return;
+  if(!armedTwice(btn, '确认删除', `再点一次删除「${plan.name}」：它的 API Key 也会从钥匙串里删掉`)) return;
   const next = structuredClone(currentSettings);
   next.custom = customPlans().filter(c => c.id !== id);
   if(next.balls) delete next.balls[id];

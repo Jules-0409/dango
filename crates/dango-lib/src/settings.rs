@@ -428,7 +428,16 @@ fn validate(settings: &Settings) -> Result<(), String> {
         if let Some(shape) = &ball.shape {
             if !matches!(
                 shape.as_str(),
-                "blob" | "gem" | "wedge" | "star" | "cloud" | "heart" | "square" | "drop"
+                "blob"
+                    | "gem"
+                    | "wedge"
+                    | "star"
+                    | "cloud"
+                    | "heart"
+                    | "square"
+                    | "drop"
+                    | "whale"
+                    | "cat"
             ) {
                 return Err(format!("invalid shape for {plan_id}"));
             }
@@ -866,5 +875,22 @@ mod tests {
         .unwrap();
         assert!(load_from(&path).hidden.is_empty());
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn whale_and_cat_are_valid_shapes_and_unknown_ones_are_not() {
+        let mut value = settings(&["nova"]);
+        for shape in ["whale", "cat"] {
+            value.balls.insert(
+                "nova".into(),
+                BallSettings {
+                    shape: Some(shape.into()),
+                    color: None,
+                },
+            );
+            assert!(super::validate(&value).is_ok(), "{shape}");
+        }
+        value.balls.get_mut("nova").unwrap().shape = Some("dolphin".into());
+        assert!(super::validate(&value).is_err());
     }
 }

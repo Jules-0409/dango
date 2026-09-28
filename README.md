@@ -81,6 +81,18 @@ bash scripts/bundle-macos.sh          # makes dist/Dango.app and a zip
 
 More detail in [MANUAL.md](MANUAL.md) (Chinese).
 
+## iPhone widget (experimental)
+
+`ios/` has a small iOS app plus home-screen and lock-screen widgets that show the same balls. The phone never talks to any vendor: your Mac serves a trimmed feed at `127.0.0.1:8049/feed` (names, colours, faces, percentages, reset times; no tokens, accounts or raw errors), and something you control copies it to a URL the phone can read. `scripts/push-feed.sh` does that over SSH (set `DANGO_FEED_SSH` and `DANGO_FEED_DIR`, run it every minute with launchd); the file name is a random secret kept in `~/Library/Application Support/dango/phone-feed.secret`.
+
+```bash
+cd ios
+DANGO_FEED_BASE=https://your.server/dango-feed bash gen-config.sh   # writes Shared/FeedConfig.swift (git-ignored)
+xcodegen generate                                                   # set DEVELOPMENT_TEAM in project.yml first
+```
+
+The app runs the same grok-ball engine in a web view, so the balls follow your finger and react when you poke them. Widgets can't animate continuously on iOS; tapping a ball there makes it pull a face for a moment.
+
 ## Credits
 
 The emotion-ball engine comes from **[tycoding/grok-ball](https://github.com/tycoding/grok-ball)** (MIT, Copyright (c) 2026 tycoding). `ui/grok-ball.js` is the original; `crates/grok-ball` is a Rust port checked frame by frame against it. The original license is in `crates/grok-ball/LICENSE`.

@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Dango</title>
+<style>
+  /* 芭乐玻璃：和小件 / 介绍页演示桌面同一套。玻璃只有胶囊一件，详情卡是纸。 */
+  :root{
+    --page:#EDE6E4; --ink:#2E2626; --ink-2:#5E5352; --ink-3:#8A7E7C; --hair:rgba(70,52,52,.12);
+    --paper:#FCFAF9; --rose-deep:#6B5757;
+    --wall-a:#E4D4D3; --wall-b:#C8D2C7; --wall-base:#D6CAC8; --wall-end:#C3CDC2;
+    --cap-hi:rgba(255,255,255,.62); --cap-lo:rgba(255,255,255,.38); --cap-edge:rgba(255,255,255,.8);
+    --bubble:rgba(252,250,249,.94); --b-ink:#2E2626; --b-ink-3:#8A7E7C;
+    --dtrack:rgba(70,52,52,.13); --track:rgba(70,52,52,.1);
+    --warn:#C0791A; --danger:#C74A3F;
+    --f-display:"Optima","Avenir Next","PingFang SC",serif;
+    --f-ui:-apple-system,"PingFang SC",sans-serif;
+    --f-mono:ui-monospace,"SF Mono",Menlo,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --page:#17120F; --ink:#EFE7E4; --ink-2:#C9BDBA; --ink-3:#9D908D; --hair:rgba(255,240,235,.1);
+      --paper:#221B19; --rose-deep:#E4CBCB;
+      --wall-a:#3A2C2B; --wall-b:#28332A; --wall-base:#1C1716; --wall-end:#162017;
+      --cap-hi:rgba(60,48,45,.62); --cap-lo:rgba(40,32,30,.5); --cap-edge:rgba(255,235,230,.18);
+      --bubble:rgba(38,30,28,.95); --b-ink:#EFE7E4; --b-ink-3:#A39592;
+      --dtrack:rgba(255,240,235,.14); --track:rgba(255,240,235,.1);
+      --warn:#E3A04A; --danger:#E4675B;
+    }
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:var(--f-ui);color:var(--ink);overflow:hidden;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation;
+    background:
+      radial-gradient(70% 45% at 8% 0%, var(--wall-a) 0%, transparent 70%),
+      radial-gradient(80% 50% at 100% 100%, var(--wall-b) 0%, transparent 70%),
+      linear-gradient(160deg, var(--wall-base), var(--wall-end));
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    display:flex;flex-direction:column;
+  }
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.12;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");}
+
+  header{display:flex;align-items:flex-end;justify-content:space-between;padding:14px 18px 6px;}
+  h1{font-family:var(--f-display);font-size:32px;font-weight:700;letter-spacing:-.03em;line-height:1;}
+  h1 small{display:block;font-family:var(--f-ui);font-size:12px;font-weight:600;letter-spacing:.12em;color:var(--rose-deep);margin-top:6px;}
+  .meta{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-3);}
+  .meta.stale{color:var(--warn);}
+  .refresh{width:34px;height:34px;border-radius:50%;border:0;background:var(--paper);color:var(--ink-2);
+    box-shadow:inset 0 0 0 1px var(--hair);font-size:17px;display:grid;place-items:center;}
+  .refresh.spin{animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .problem{margin:6px 16px 0;padding:10px 12px;border-radius:14px;font-size:12.5px;line-height:1.5;
+    background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--danger);display:none;}
+  .problem.on{display:block;}
+
+  .stage{position:relative;flex:1;min-height:0;}
+  .empty{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--ink-3);font-size:13px;text-align:center;padding:40px;}
+  .empty.on{display:flex;}
+  .empty .eb{width:84px;height:84px;}
+
+  /* 胶囊 */
+  .capsule{position:absolute;left:16px;top:14px;width:62px;border-radius:31px;
+    background:linear-gradient(160deg,var(--cap-hi),var(--cap-lo));
+    -webkit-backdrop-filter:blur(26px) saturate(190%);backdrop-filter:blur(26px) saturate(190%);
+    box-shadow:0 18px 40px rgba(50,36,36,.18),0 2px 8px rgba(50,36,36,.08),inset 0 0 0 1px var(--cap-edge);z-index:3;}
+  .balls{display:grid;grid-template-rows:1fr;transition:grid-template-rows .5s cubic-bezier(.5,0,.2,1);}
+  .capsule.folded .balls{grid-template-rows:0fr;}
+  .balls > div{min-height:0;overflow:hidden;display:flex;flex-direction:column;align-items:center;gap:6px;}
+  .balls > div > .slot:first-child{margin-top:9px;}
+  .grip{display:block;width:62px;height:22px;}
+  .grip path{fill:none;stroke:var(--dtrack);stroke-width:3.5;stroke-linecap:round;}
+  .slot{position:relative;width:54px;height:54px;flex:none;display:grid;place-items:center;
+    transition:opacity .25s ease, transform .4s cubic-bezier(.34,1.45,.64,1);}
+  .capsule.folded .slot{transform:scale(.2) translateY(40px);opacity:0;transition:opacity .2s ease, transform .3s ease-in;}
+  .capsule.focus .slot:not(.hot){opacity:.5;}
+  .slot.hot{transform:scale(1.08);}
+  .slot .ring{position:absolute;inset:-2px;width:58px;height:58px;overflow:visible;}
+  .slot .ring circle{fill:none;stroke-linecap:round;}
+  .slot .ring .trk{stroke:var(--dtrack);}
+  .slot .ring .grow{transition:stroke-dashoffset .9s cubic-bezier(.34,1.45,.64,1);}
+  .slot .ring .bead{transition:r .35s cubic-bezier(.34,1.8,.64,1);stroke:none;}
+  .slot .ring .ants{stroke-dasharray:3 4;animation:dants 1s linear infinite;}
+  @keyframes dants{to{stroke-dashoffset:-14px}}
+  .slot .ring .comet{stroke:#fff;transform-origin:29px 29px;animation:orbit var(--spd,4s) linear infinite;}
+  @keyframes orbit{from{transform:rotate(-90deg)}to{transform:rotate(270deg)}}
+  .slot .ring.low{animation:breathe 1.6s ease-in-out infinite;}
+  @keyframes breathe{50%{opacity:.55}}
+  .slot .ball{width:44px;height:44px;position:relative;}
+  .slot .ball svg{width:100%;height:100%;display:block;overflow:visible;}
+  .ripple{position:absolute;inset:0;border-radius:50%;border:2px solid;pointer-events:none;}
+  .slot .zz{position:absolute;right:-2px;top:-4px;font:italic 700 11px/1 var(--f-display);color:var(--b-ink-3);opacity:0;pointer-events:none;}
+  .slot.sleep .zz{animation:zz 2.4s ease-in-out infinite;}
+  @keyframes zz{0%{opacity:0;transform:translate(0,4px) scale(.7)}30%{opacity:1}100%{opacity:0;transform:translate(8px,-14px) scale(1.15)}}
+
+  /* 详情卡：卡身和尖角是一条路径 */
+  .card{position:absolute;left:92px;right:14px;color:var(--b-ink);z-index:4;
+    opacity:0;transform:translateX(-8px) scale(.97);transform-origin:left center;pointer-events:none;
+    transition:opacity .16s ease, transform .3s cubic-bezier(.34,1.45,.64,1), top .3s cubic-bezier(.34,1.3,.64,1);}
+  .card.on{opacity:1;transform:none;pointer-events:auto;}
+  .card .shape{position:absolute;left:-8px;top:0;overflow:visible;pointer-events:none;
+    filter:drop-shadow(0 14px 22px rgba(50,36,36,.16)) drop-shadow(0 2px 4px rgba(50,36,36,.08));}
+  .card .shape path{fill:var(--bubble);stroke:var(--hair);stroke-width:1;}
+  .card .body{position:relative;padding:14px 16px 12px;}
+  .c-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .c-head .mini{width:30px;height:30px;flex:none;}
+  .c-head .mini svg{width:100%;height:100%;display:block;}
+  .c-title{flex:1;min-width:0;}
+  .c-title b{display:block;font-size:15px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .c-title span{font-size:11.5px;color:var(--b-ink-3);}
+  .c-big{font:600 24px/1 var(--f-mono);letter-spacing:-.03em;}
+  .c-big small{font-size:12px;font-weight:400;color:var(--b-ink-3);margin-left:1px;}
+  .row{display:grid;grid-template-columns:minmax(0,78px) minmax(0,1fr) 30px;align-items:center;gap:10px;height:24px;font-size:12px;}
+  .row .lbl{color:var(--b-ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .row .bar{height:5px;border-radius:99px;background:var(--track);overflow:hidden;}
+  .row .bar i{display:block;height:100%;width:0;border-radius:99px;background:var(--c);transition:width .8s cubic-bezier(.34,1.3,.64,1);}
+  .row .num{text-align:right;font:600 11.5px/1 var(--f-mono);}
+  .row .num.dim{color:var(--b-ink-3);font-weight:400;}
+  .c-err{padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--danger) 12%,transparent);font-size:12.5px;line-height:1.55;}
+  .c-foot{margin-top:10px;font-size:11px;color:var(--b-ink-3);display:flex;justify-content:space-between;}
+
+  /* 外环样式 */
+  .rings{display:flex;gap:6px;overflow-x:auto;padding:10px 16px 12px;scrollbar-width:none;}
+  .rings::-webkit-scrollbar{display:none;}
+  .rings button{flex:none;font:500 13px/1 var(--f-ui);padding:9px 14px;border-radius:99px;border:0;background:var(--paper);color:var(--ink);box-shadow:inset 0 0 0 1px var(--hair);}
+  .rings button.on{background:var(--rose-deep);color:var(--paper);}
+  .tip{font-size:11.5px;color:var(--ink-3);text-align:center;padding:0 24px 10px;}
+  @media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important;}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Dango<small>额度团子</small></h1>
+  <div class="meta" id="meta"><span id="age"></span><button class="refresh" id="refresh" aria-label="刷新">↻</button></div>
+</header>
+<div class="problem" id="problem"></div>
+<div class="stage" id="stage">
+  <div class="capsule" id="capsule">
+    <div class="balls"><div id="ballList"></div></div>
+    <svg class="grip" id="grip" viewBox="0 0 62 22" role="button" aria-label="折叠胶囊"><path id="gripPath"/></svg>
+  </div>
+  <div class="card" id="card" aria-live="polite">
+    <svg class="shape" id="cardShape"><path id="cardPath"/></svg>
+    <div class="body" id="cardBody"></div>
+  </div>
+  <div class="empty" id="empty"><div class="eb" id="emptyBall"></div><div>还没收到 Mac 的数据<br>Mac 上的 Dango 开着就会出现</div></div>
+</div>
+<div class="rings" id="rings"></div>
+<div class="tip">戳一戳 · 连戳试试 · 点胶囊底下的弧线收起</div>
+
+<script src="grok-ball.js"></script>
+<script src="common.js"></script>
+<script>
+(() => {
+'use strict';
+registerExtraShapes();
+const $ = s => document.querySelector(s);
+const native = (name, body) => { try { window.webkit.messageHandlers[name].postMessage(body ?? null); } catch (_) {} };
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const EYE = '#F5F2ED';
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const WARN = () => css('--warn'), DANGER = () => css('--danger');
+const pct = p => p == null ? '—' : Math.round(p);
+
+// ---------- 外环样式（和设置页同一套名字），选过的记住 ----------
+const RING_MODES = [['plain','细环'],['beads','珠串'],['double','双环'],['flow','流光'],['segments','分段'],['trail','尾迹']];
+let ringMode = 'plain';
+try { ringMode = localStorage.getItem('dango.ring') || 'plain'; } catch (_) {}
+$('#rings').innerHTML = RING_MODES.map(([k, n]) => `<button data-rs="${k}" class="${k === ringMode ? 'on' : ''}">${n}</button>`).join('');
+$('#rings').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  ringMode = b.dataset.rs;
+  try { localStorage.setItem('dango.ring', ringMode); } catch (_) {}
+  document.querySelectorAll('#rings button').forEach(x => x.classList.toggle('on', x === b));
+  Object.keys(state).forEach((id, i) => setTimeout(() => renderRing(id), i * 60));
+  native('tap');
+});
+
+// ---------- 状态 ----------
+let feed = null;
+const state = {};           // id -> { ball, slot, ring, sleep }
+let selected = null, folded = false, maskSeq = 0, lastActive = performance.now();
+const cap = $('#capsule'), list = $('#ballList'), card = $('#card'), stage = $('#stage');
+
+// theme.rs：>=50 套餐色淡一点，20–50 套餐色，>0 橙，0 红；查不到是红虚线
+function tone(b, v){
+  if (!b.ok || v === 0) return { col:DANGER(), a:1 };
+  if (v < 20) return { col:WARN(), a:1 };
+  return { col:b.color, a: v >= 50 ? .45 : 1 };
+}
+// 双环内圈：和主额度不一样的第一个窗口（通常是 5 小时）
+function innerOf(b){
+  const other = (b.buckets || []).find(x => x.percent != null && Math.round(x.percent) !== Math.round(b.percent ?? -1));
+  return other ? other.percent : null;
+}
+function ringSVG(b){
+  const R = 25, C = 2 * Math.PI * R;
+  if (!b.ok) return `<circle class="ants" cx="29" cy="29" r="${R}" stroke-width="2.4" style="stroke:${DANGER()}"/>`;
+  if (b.percent == null) return `<circle class="trk" cx="29" cy="29" r="${R}" stroke-width="2.4"/>`;
+  const p = b.percent, { col, a } = tone(b, p);
+  const arc = (r, v, sw, c, op) => { const cc = 2 * Math.PI * r;
+    return `<circle class="trk" cx="29" cy="29" r="${r}" stroke-width="${sw}"/><circle class="grow" cx="29" cy="29" r="${r}" stroke-width="${sw}" style="stroke:${c};opacity:${op}" stroke-dasharray="${cc}" stroke-dashoffset="${cc}" data-off="${cc * (1 - v / 100)}" transform="rotate(-90 29 29)"/>`; };
+  let h = '';
+  if (ringMode === 'beads'){
+    const on = Math.round(p / 5);
+    for (let i = 0; i < 20; i++){
+      const ang = (-90 + i * 18) * Math.PI / 180, lit = i < on;
+      h += `<circle class="bead" cx="${(29 + R * Math.cos(ang)).toFixed(2)}" cy="${(29 + R * Math.sin(ang)).toFixed(2)}" r="0" data-r="${lit ? 2.2 : 1.1}" style="fill:${lit ? col : 'var(--dtrack)'};opacity:${lit ? a : 1};transition-delay:${i * 22}ms"/>`;
+    }
+  } else if (ringMode === 'double'){
+    const inner = innerOf(b);
+    h = arc(26.5, p, 2.4, col, a);
+    h += inner == null ? `<circle class="trk" cx="29" cy="29" r="23.2" stroke-width="1.7"/>` : arc(23.2, inner, 1.7, b.color, .55);
+  } else if (ringMode === 'segments'){
+    const SEG = 8, GAP = 10, segLen = (360 / SEG - GAP) / 360 * C, lit = p / 100 * SEG;
+    for (let i = 0; i < SEG; i++){
+      const len = i < Math.floor(lit) ? segLen : i === Math.floor(lit) ? segLen * (lit - i) : 0;
+      const rot = (-90 + GAP / 2 + i * 45).toFixed(1);
+      h += `<circle class="trk" cx="29" cy="29" r="${R}" stroke-width="2.4" stroke-dasharray="${segLen} ${C}" transform="rotate(${rot} 29 29)"/>`;
+      if (len > .01) h += `<circle cx="29" cy="29" r="${R}" stroke-width="2.4" style="stroke:${col};opacity:0;transition:opacity .3s ${i * 60}ms" data-show="${a}" stroke-dasharray="${len} ${C}" transform="rotate(${rot} 29 29)"/>`;
+    }
+  } else if (ringMode === 'trail'){
+    h = `<circle class="trk" cx="29" cy="29" r="${R}" stroke-width="2.4"/>`;
+    if (p > 0){
+      const N = 24, arcA = p / 100 * 360, step = arcA / N, len = step / 360 * C;
+      for (let i = 0; i < N; i++) h += `<circle cx="29" cy="29" r="${R}" stroke-width="2.4" style="stroke:${col};opacity:0;transition:opacity .25s ${i * 18}ms" data-show="${((.12 + .88 * i / (N - 1)) * a).toFixed(2)}" stroke-dasharray="${len + .4} ${C}" stroke-linecap="butt" transform="rotate(${(-90 + i * step).toFixed(2)} 29 29)"/>`;
+      const e = (-90 + arcA) * Math.PI / 180;
+      h += `<circle cx="${(29 + R * Math.cos(e)).toFixed(2)}" cy="${(29 + R * Math.sin(e)).toFixed(2)}" r="2.8" style="fill:${col};stroke:none;opacity:0;transition:opacity .3s .45s" data-show="${a}"/>`;
+    }
+  } else {
+    h = arc(R, p, 2.4, col, a);
+    if (ringMode === 'flow' && p > 0){
+      const id = 'm' + (++maskSeq), spd = p < 20 ? 1.1 : p < 50 ? 2.2 : 4.5;
+      h += `<defs><mask id="${id}"><circle cx="29" cy="29" r="${R}" fill="none" stroke="#fff" stroke-width="3.2" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - p / 100)}" transform="rotate(-90 29 29)"/></mask></defs>`
+        + `<circle class="comet" cx="29" cy="29" r="${R}" stroke-width="2.6" mask="url(#${id})" stroke-dasharray="9 ${C}" style="--spd:${spd}s;opacity:.85"/>`;
+    }
+  }
+  return h;
+}
+function ballOf(id){ return feed.balls.find(b => b.id === id); }
+function renderRing(id){
+  const b = ballOf(id), st = state[id]; if (!b || !st) return;
+  st.ring.classList.toggle('low', b.ok && b.percent != null && b.percent < 20);
+  st.ring.innerHTML = ringSVG(b);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    st.ring.querySelectorAll('.grow').forEach(c => c.style.strokeDashoffset = c.dataset.off);
+    st.ring.querySelectorAll('.bead').forEach(c => c.setAttribute('r', c.dataset.r));
+    st.ring.querySelectorAll('[data-show]').forEach(c => c.style.opacity = c.dataset.show);
+  }));
+}
+function paint(id){
+  const b = ballOf(id), st = state[id]; if (!b || !st) return;
+  renderRing(id);
+  st.ball.setEmotion(st.sleep ? '00' : b.emotion);
+  st.slot.classList.toggle('sleep', !!st.sleep);
+}
+
+// ---------- 戳一下：和小件 / 介绍页同一套。1.5 秒内连戳同一颗会叠：
+//            越戳压得越狠、涟漪越大；第 3 下转晕，第 5 下撒彩带 ----------
+const POKE_FACES = ['14', '13', '10', '03'];
+const combos = {};
+function squash(el, k){
+  const q = 0.22 * Math.min(1.8, Math.max(1, k));
+  el.animate([
+    { transform:'scale(1,1)' },
+    { transform:`scale(${1 + q},${1 - q})`, offset:.22 },
+    { transform:`scale(${1 - q * .45},${1 + q * .5})`, offset:.5 },
+    { transform:`scale(${1 + q * .15},${1 - q * .12})`, offset:.75 },
+    { transform:'scale(1,1)' },
+  ], { duration:500, easing:'ease-out' });
+}
+function ripple(host, color, k){
+  const r = document.createElement('span');
+  r.className = 'ripple'; r.style.borderColor = color;
+  host.appendChild(r);
+  r.animate([{ transform:'scale(1)', opacity:.85 }, { transform:`scale(${1.28 + .12 * k})`, opacity:0 }],
+    { duration:550, easing:'cubic-bezier(.2,.8,.3,1)' }).onfinish = () => r.remove();
+}
+function poke(id){
+  const b = ballOf(id), st = state[id]; if (!b || !st) return;
+  const now = performance.now(), c = combos[id];
+  const n = c && now - c.t < 1500 ? c.n + 1 : 1;
+  combos[id] = { n, t:now, timer: c && c.timer };
+  const k = 1 + 0.2 * (Math.min(n, 4) - 1);
+  const col = b.ok ? tone(b, b.percent ?? 100).col : DANGER();
+  if (!reduced){ squash(st.slot.querySelector('.ball'), k); ripple(st.slot, col, k); }
+  native('poke', n >= 5 ? 'party' : n === 3 ? 'dizzy' : 'tap');
+  if (st.sleep){ st.sleep = false; st.slot.classList.remove('sleep'); }
+  st.ball.bounce();
+  if (!b.ok) return;
+  let face, hold;
+  if (n === 3){ st.ball.spin(1); face = '17'; hold = 1400; }
+  else if (n >= 5){ st.ball.burst(26); st.ball.spin(2); face = '10'; hold = 1800; combos[id].n = 0; }
+  else { face = POKE_FACES[(Math.floor(now / 7) + n) % POKE_FACES.length]; hold = 1100; }
+  st.ball.setEmotion(face);
+  clearTimeout(combos[id].timer);
+  combos[id].timer = setTimeout(() => paint(id), hold);
+}
+
+// ---------- 详情卡 ----------
+let miniBall = null;
+function until(ms){
+  const s = Math.max(0, ms / 1000 - Date.now() / 1000);
+  if (s < 3600) return Math.max(1, Math.floor(s / 60)) + ' 分钟';
+  if (s < 86400) return Math.floor(s / 3600) + ' 小时';
+  return Math.floor(s / 86400) + ' 天';
+}
+function nextReset(b){
+  const all = [b.resetsAt, ...(b.buckets || []).map(x => x.resetsAt)].filter(x => x && x > Date.now());
+  return all.length ? Math.min(...all) : null;
+}
+function rowHTML(x, b){
+  const p = x.percent, c = p == null ? 'transparent' : tone(b, p).col;
+  return `<div class="row"><span class="lbl">${x.label}</span><span class="bar"><i style="--c:${c}" data-p="${p ?? 0}"></i></span><span class="num ${p == null ? 'dim' : ''}" style="${p != null && p < 20 ? 'color:' + c : ''}">${pct(p)}</span></div>`;
+}
+function esc(s){ return String(s ?? '').replace(/[&<>"]/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[ch]); }
+function showCard(id){
+  const b = ballOf(id); if (!b) return;
+  const reset = nextReset(b);
+  const rows = (b.buckets || []).map(x => rowHTML({ ...x, label: esc(x.label) }, b)).join('');
+  $('#cardBody').innerHTML = `
+    <div class="c-head"><div class="mini"></div><div class="c-title"><b>${esc(b.name)}</b><span>${b.ok ? esc(b.label || '') : '查不到'}</span></div>
+      ${b.ok && b.percent != null ? `<div class="c-big">${pct(b.percent)}<small>%</small></div>` : ''}</div>
+    ${b.ok ? rows : `<div class="c-err">${esc(b.hint || '查询失败')}</div>`}
+    <div class="c-foot"><span>${b.ok && reset ? until(reset) + '后重置' : ''}</span><span>${ageText()}</span></div>`;
+  if (miniBall) miniBall.destroy();
+  miniBall = GrokBall.create(card.querySelector('.mini'), { emotion: b.emotion, shape:b.shape, color:b.color, eyeColor:EYE, eyeScale:1.15, lite:true });
+  place(id);
+  card.classList.add('on');
+  requestAnimationFrame(() => requestAnimationFrame(() =>
+    card.querySelectorAll('.bar i').forEach((x, k) => setTimeout(() => x.style.width = x.dataset.p + '%', k * 40))));
+}
+function shapePath(w, h, tailY){
+  const r = 18, x0 = 8, tw = 8, th = 9;
+  const ty = Math.max(r + th, Math.min(h - r - th, tailY));
+  return `M${x0 + r} 0 H${x0 + w - r} Q${x0 + w} 0 ${x0 + w} ${r} V${h - r} Q${x0 + w} ${h} ${x0 + w - r} ${h} H${x0 + r} Q${x0} ${h} ${x0} ${h - r}`
+    + ` V${ty + th} C${x0} ${ty + 4} ${x0 - tw + 1.5} ${ty + 1.8} ${x0 - tw} ${ty} C${x0 - tw + 1.5} ${ty - 1.8} ${x0} ${ty - 4} ${x0} ${ty - th}`
+    + ` V${r} Q${x0} 0 ${x0 + r} 0 Z`;
+}
+function place(id){
+  const s = stage.getBoundingClientRect(), bRect = state[id].slot.getBoundingClientRect();
+  // 先定左边再量宽：胶囊放大后卡片变窄，先量会量到旧宽度
+  card.style.left = (cap.getBoundingClientRect().right - s.left + 14) + 'px';
+  const w = card.offsetWidth, h = card.offsetHeight;
+  const cy = bRect.top + bRect.height / 2 - s.top;
+  const top = Math.max(8, Math.min(s.height - h - 8, cy - 44));
+  card.style.top = top + 'px';
+  const svg = $('#cardShape');
+  svg.setAttribute('width', w + 8); svg.setAttribute('height', h);
+  svg.setAttribute('viewBox', `0 0 ${w + 8} ${h}`);
+  $('#cardPath').setAttribute('d', shapePath(w, h, cy - top));
+}
+function select(id){
+  selected = id;
+  cap.classList.toggle('focus', !!id);
+  Object.entries(state).forEach(([k, st]) => st.slot.classList.toggle('hot', k === id));
+  if (id) showCard(id); else card.classList.remove('on');
+  gazeAll();
+}
+
+// ---------- 眼神：跟着手指；选中一颗时别的都扭头看它 ----------
+let finger = null;
+function gazeAll(){
+  Object.entries(state).forEach(([id, st]) => {
+    if (st.sleep) return;
+    const r = st.slot.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    let tx, ty;
+    if (finger){ tx = finger.x; ty = finger.y; }
+    else if (selected && selected !== id && state[selected]){ const h = state[selected].slot.getBoundingClientRect(); tx = h.left + h.width / 2; ty = h.top + h.height / 2; }
+    else { st.ball.clearGaze(); return; }
+    st.ball.setGaze((tx - cx) / 160, (ty - cy) / 160);
+  });
+}
+document.addEventListener('touchstart', e => { const t = e.touches[0]; finger = { x:t.clientX, y:t.clientY }; lastActive = performance.now(); gazeAll(); }, { passive:true });
+document.addEventListener('touchmove', e => { const t = e.touches[0]; finger = { x:t.clientX, y:t.clientY }; gazeAll(); }, { passive:true });
+document.addEventListener('touchend', () => { setTimeout(() => { finger = null; gazeAll(); }, 700); }, { passive:true });
+
+// ---------- 底部弧线：展开时与胶囊底同心，折叠时拉直 ----------
+const gripPath = $('#gripPath');
+let gripT = 0;
+function drawGrip(t){
+  const pts = [];
+  for (let i = 0; i <= 12; i++){
+    const a = (-0.42 + 0.84 * i / 12);
+    const ax = 31 + 22 * Math.sin(a), ay = -10 + 22 * Math.cos(a);
+    const lx = 31 + 9 * (i / 6 - 1), ly = 11;
+    pts.push([ax + (lx - ax) * t, ay + (ly - ay) * t]);
+  }
+  gripPath.setAttribute('d', 'M' + pts.map(p => p[0].toFixed(2) + ' ' + p[1].toFixed(2)).join(' L'));
+}
+drawGrip(0);
+function tweenGrip(to){
+  const from = gripT, t0 = performance.now();
+  (function step(now){
+    const k = Math.min(1, (now - t0) / 420), e = 1 - Math.pow(1 - k, 3);
+    gripT = from + (to - from) * e; drawGrip(gripT);
+    if (k < 1) requestAnimationFrame(step);
+  })(t0);
+}
+$('#grip').addEventListener('click', () => {
+  folded = !folded; select(null);
+  const slots = [...list.children];
+  if (folded){
+    slots.slice().reverse().forEach((s, i) => s.style.transitionDelay = (i * 35) + 'ms');
+    cap.classList.add('folded');
+  } else {
+    slots.forEach((s, i) => s.style.transitionDelay = (120 + i * 55) + 'ms');
+    cap.classList.remove('folded');
+    setTimeout(() => Object.values(state).forEach((st, i) => setTimeout(() => st.ball.bounce(), i * 55)), 200);
+  }
+  setTimeout(() => slots.forEach(s => s.style.transitionDelay = ''), 900);
+  tweenGrip(folded ? 1 : 0);
+  native('tap');
+});
+
+// 点胶囊外空白处收卡片
+stage.addEventListener('click', e => { if (!cap.contains(e.target) && !card.contains(e.target)) select(null); });
+
+// ---------- 数据：原生层塞进来 ----------
+let meta = { live:true, problem:null };
+function ageText(){
+  if (!feed) return '';
+  const s = Math.max(0, Date.now() / 1000 - feed.fetchedAt);
+  if (s < 90) return '刚刚更新';
+  if (s < 3600) return Math.floor(s / 60) + ' 分钟前更新';
+  if (s < 86400) return Math.floor(s / 3600) + ' 小时前更新';
+  return Math.floor(s / 86400) + ' 天前更新';
+}
+function renderMeta(){
+  $('#age').textContent = feed ? (meta.live ? '' : '离线 · ') + ageText() : '';
+  $('#meta').classList.toggle('stale', !!feed && (!meta.live || Date.now() / 1000 - feed.fetchedAt > 900));
+  $('#problem').textContent = meta.problem || '';
+  $('#problem').classList.toggle('on', !!meta.problem);
+}
+setInterval(renderMeta, 30000);
+
+function build(){
+  const ids = feed.balls.map(b => b.id);
+  // 走掉的球拆掉，新来的球建起来；已有的只换数据，保住它的动画状态
+  Object.keys(state).forEach(id => { if (!ids.includes(id)){ state[id].ball.destroy(); state[id].slot.remove(); delete state[id]; } });
+  feed.balls.forEach((b, i) => {
+    let st = state[b.id];
+    if (!st){
+      const slot = document.createElement('div');
+      slot.className = 'slot'; slot.dataset.id = b.id;
+      slot.innerHTML = `<svg class="ring" viewBox="0 0 58 58"></svg><div class="ball"></div><span class="zz">z</span>`;
+      const ball = GrokBall.create(slot.querySelector('.ball'), { emotion:'05', shape:b.shape, color:b.color, eyeColor:EYE, eyeScale:1.15, lite:false });
+      st = state[b.id] = { ball, slot, ring:slot.querySelector('.ring'), sleep:false, shape:b.shape, color:b.color };
+      slot.addEventListener('click', e => { e.stopPropagation(); lastActive = performance.now(); if (selected !== b.id) select(b.id); poke(b.id); });
+      setTimeout(() => paint(b.id), 350 + i * 90);
+    } else if (st.shape !== b.shape || st.color !== b.color){
+      st.ball.destroy();
+      st.ball = GrokBall.create(st.slot.querySelector('.ball'), { emotion:b.emotion, shape:b.shape, color:b.color, eyeColor:EYE, eyeScale:1.15, lite:false });
+      st.shape = b.shape; st.color = b.color;
+      paint(b.id);
+    } else {
+      paint(b.id);
+    }
+    list.appendChild(st.slot);   // 保持顺序
+  });
+  $('#empty').classList.toggle('on', feed.balls.length === 0);
+  fit();
+  if (selected && state[selected]) showCard(selected); else if (selected) select(null);
+}
+
+// 手机竖屏空间多：胶囊按可用高度放大一点（最多 1.3 倍），和桌面上一样只是更好戳
+function fit(){
+  if (folded) return;
+  cap.style.zoom = 1;
+  const room = stage.clientHeight - 28, natural = cap.offsetHeight;
+  const z = natural > 0 ? Math.max(1, Math.min(1.3, room / natural)) : 1;
+  cap.style.zoom = z.toFixed(3);
+  if (selected && state[selected]) place(selected);
+}
+addEventListener('resize', fit);
+
+let emptyBall = GrokBall.create($('#emptyBall'), { emotion:'02', shape:'blob', color:'#D8A7A0', eyeColor:EYE, lite:true });
+window.dango = {
+  setFeed(next, m){
+    meta = m || meta;
+    $('#refresh').classList.remove('spin');
+    renderMeta();   // 提示条先出来，胶囊再按剩下的高度放大
+    if (next){ feed = next; build(); }
+    else if (!feed){ $('#empty').classList.add('on'); }
+    else fit();
+  },
+};
+$('#empty').classList.add('on');
+$('#refresh').addEventListener('click', () => { $('#refresh').classList.add('spin'); native('refresh'); });
+
+// ---------- 闲着就睡（满额度又没人理的球）+ 偶尔东张西望 ----------
+setInterval(() => {
+  if (!feed) return;
+  const idle = performance.now() - lastActive > 8000;
+  feed.balls.forEach(b => {
+    const st = state[b.id];
+    if (idle && st && !st.sleep && b.ok && (b.percent ?? 0) >= 100 && selected !== b.id){ st.sleep = true; paint(b.id); }
+  });
+  if (!finger && !selected && !folded){
+    const awake = Object.values(state).filter(s => !s.sleep);
+    const one = awake[Math.floor(Math.random() * awake.length)];
+    if (one){ one.ball.setGaze(Math.random() * 2 - 1, Math.random() - .5); setTimeout(() => !finger && one.ball.clearGaze(), 1400); }
+  }
+}, 2200);
+
+native('ready');
+})();
+</script>
+</body>
+</html>

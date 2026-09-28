@@ -1,0 +1,50 @@
+name: Dango
+options:
+  bundleIdPrefix: dev.jules.dango
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    DEVELOPMENT_TEAM: ""  # 填你自己的 Apple 开发团队 ID
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  Dango:
+    type: application
+    platform: iOS
+    sources:
+      - Dango
+      - Shared
+      - path: ../ui/grok-ball.js
+        buildPhase: resources
+      - path: ../ui/common.js
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.jules.dango.ios
+        INFOPLIST_KEY_CFBundleDisplayName: Dango
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        GENERATE_INFOPLIST_FILE: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1"
+    dependencies:
+      - target: DangoWidget
+  DangoWidget:
+    type: app-extension
+    platform: iOS
+    sources: [DangoWidget, Shared]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.jules.dango.ios.widget
+        INFOPLIST_KEY_CFBundleDisplayName: Dango
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1"
+    info:
+      path: DangoWidget/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension

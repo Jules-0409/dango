@@ -3507,5 +3507,15 @@ pub fn get_shape_data(shape: ShapeKind) -> ShapeData {
             face: DROP_FACE,
             tilt_scale: DROP_TILT_SCALE,
         },
+        ShapeKind::Whale => ShapeData {
+            ring: &crate::extra_shapes::WHALE_RING,
+            face: crate::extra_shapes::WHALE_FACE,
+            tilt_scale: crate::extra_shapes::WHALE_TILT_SCALE,
+        },
+        ShapeKind::Cat => ShapeData {
+            ring: &crate::extra_shapes::CAT_RING,
+            face: crate::extra_shapes::CAT_FACE,
+            tilt_scale: crate::extra_shapes::CAT_TILT_SCALE,
+        },
     }
 }

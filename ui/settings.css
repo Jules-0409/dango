@@ -678,6 +678,7 @@ body{
 .connect-actions{display:flex;gap:6px}
 .connect-remove{opacity:.7}
 .connect-remove:hover{opacity:1}
+.glass-btn.is-armed{opacity:1;color:var(--danger);border-color:currentColor}
 
 /* ===== 响应式：窗口收窄时分级收缩 ===== */
 /* ~720px 以下：内容收紧，行内次要信息让位 */

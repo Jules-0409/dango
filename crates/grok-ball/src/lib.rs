@@ -5,6 +5,7 @@
 pub mod ball;
 pub mod data;
 pub mod emotion;
+pub mod extra_shapes;
 pub mod frame;
 pub mod geometry;
 pub mod prng;

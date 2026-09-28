@@ -47,6 +47,7 @@ pub fn router(state: ApiState) -> Router {
         .route("/ui/bridge.js", get(bridge_js))
         .route("/ui/grok-ball.js", get(grok_ball_js))
         .route("/snapshot", get(snapshot))
+        .route("/feed", get(phone_feed))
         .route("/refresh", post(refresh))
         .route("/clipboard", post(clipboard))
         .route("/settings", get(get_settings).put(put_settings))
@@ -178,6 +179,22 @@ async fn snapshot(State(state): State<ApiState>) -> Json<serde_json::Value> {
         .map(|snapshot| (**snapshot).clone())
         .unwrap_or_else(data::placeholder_snapshot);
     Json(serde_json::to_value(snapshot).unwrap_or(serde_json::Value::Null))
+}
+
+/// `GET /feed` — the trimmed snapshot the iPhone widget reads (see `phone_feed`).
+async fn phone_feed(State(state): State<ApiState>) -> Json<serde_json::Value> {
+    let snapshot = state
+        .data
+        .snapshot_watch()
+        .borrow()
+        .as_ref()
+        .map(|snapshot| (**snapshot).clone())
+        .unwrap_or_else(data::placeholder_snapshot);
+    let settings = state.data.settings().await;
+    Json(
+        serde_json::to_value(crate::phone_feed::build(&snapshot, &settings))
+            .unwrap_or(serde_json::Value::Null),
+    )
 }
 
 async fn refresh(State(state): State<ApiState>) -> Json<serde_json::Value> {

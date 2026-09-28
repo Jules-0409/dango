@@ -28,6 +28,7 @@ pub mod app_model;
 pub mod connect;
 pub mod data;
 pub mod geometry;
+pub mod phone_feed;
 pub mod theme;
 pub mod token_ledger;
 pub mod window_state;

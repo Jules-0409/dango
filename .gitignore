@@ -8,3 +8,6 @@ tmp/
 *.log
 site/dist/
 dist/
+ios/Shared/FeedConfig.swift
+ios/*.xcodeproj/
+ios/build/

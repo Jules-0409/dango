@@ -436,6 +436,8 @@ fn shape_label(shape: grok_ball::ShapeKind) -> String {
         grok_ball::ShapeKind::Heart => "heart".to_string(),
         grok_ball::ShapeKind::Square => "square".to_string(),
         grok_ball::ShapeKind::Drop => "drop".to_string(),
+        grok_ball::ShapeKind::Whale => "whale".to_string(),
+        grok_ball::ShapeKind::Cat => "cat".to_string(),
     }
 }
 

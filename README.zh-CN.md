@@ -81,6 +81,18 @@ bash scripts/bundle-macos.sh          # 打出 dist/Dango.app 和 zip
 
 更细的说明在 [MANUAL.md](MANUAL.md)。
 
+## iPhone 小组件（实验性）
+
+`ios/` 里是一个 iOS App，外加桌面和锁屏小组件，显示的是同一串球。手机不直接连任何厂商：Mac 在 `127.0.0.1:8049/feed` 提供一份精简数据（名字、颜色、表情、百分比、重置时间；没有 token、账号和原始报错），再由你自己控制的方式放到手机读得到的地址。`scripts/push-feed.sh` 用 SSH 推（设好 `DANGO_FEED_SSH` 和 `DANGO_FEED_DIR`，用 launchd 每分钟跑一次）；文件名是存在 `~/Library/Application Support/dango/phone-feed.secret` 里的随机串。
+
+```bash
+cd ios
+DANGO_FEED_BASE=https://你的服务器/dango-feed bash gen-config.sh   # 生成 Shared/FeedConfig.swift（不进 git）
+xcodegen generate                                                 # 先在 project.yml 里填 DEVELOPMENT_TEAM
+```
+
+App 里跑的是同一个 grok-ball 引擎，眼睛会跟着手指、戳一下有反应。iOS 小组件不能一直动，点一下球会换个表情再变回来。
+
 ## 致谢
 
 表情球引擎来自 **[tycoding/grok-ball](https://github.com/tycoding/grok-ball)**（MIT，Copyright (c) 2026 tycoding）。`ui/grok-ball.js` 是原版，`crates/grok-ball` 是逐帧对照原版移植的 Rust 版，许可证原文在 `crates/grok-ball/LICENSE`。

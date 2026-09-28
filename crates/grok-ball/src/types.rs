@@ -26,6 +26,8 @@ pub enum ShapeKind {
     Heart,
     Square,
     Drop,
+    Whale,
+    Cat,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

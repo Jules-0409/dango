@@ -46,6 +46,18 @@ ui/              settings.html + settings.css + settings.js + common.* + bridge.
 窗口位置写在 `~/Library/Application Support/dango/window.json`
 （原子写 + 300ms 防抖，读时按屏幕裁剪），见 `crates/dango-widget/src/window_state.rs`。
 
+## iPhone 小组件（ios/）
+
+数据：小件 `GET 127.0.0.1:8049/feed`（`dango-widget/src/phone_feed.rs`：只有名字/颜色/形状/表情/百分比/重置时间，
+错误只给一句人话，不带 token、账号、原始报错）→ `scripts/push-feed.sh` 推到用户自己的服务器（目的地只从环境变量读）
+→ 手机读 `<base>/<phone-feed.secret>.json`。密钥和 `ios/Shared/FeedConfig.swift` 都不进 git。
+
+- 工程用 xcodegen：`cd ios && DANGO_FEED_BASE=… bash gen-config.sh && xcodegen generate`。
+- App 主界面 `ios/Dango/Web/capsule.html`：WKWebView 跑 `ui/grok-ball.js` + `ui/common.js`，数据由原生层
+  `window.dango.setFeed(feed, meta)` 塞进去。改戳球手感时和 `site/index.html` 一起改。
+- 小组件不能持续动画；点球走 `PokeIntent` 换表情。形状数据：
+  `cargo run -q -p grok-ball --example frame_dump > ios/Shared/BallShapes.swift`（改了形状要重跑）。
+
 ## 端口表（固定，不许漂）
 
 | 端口 | 服务 |

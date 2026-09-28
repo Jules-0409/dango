@@ -34,6 +34,11 @@ pub const DEFAULT_SHAPE: &[(&str, &str)] = &[
     ("grok", "drop"),
 ];
 
+/// Defaults for balls the user added from a template (`settings.custom`),
+/// keyed by template kind, from `ui/common.js::KIND_DEFAULTS`. The whale is
+/// DeepSeek's own shape; the settings page only offers it on DeepSeek balls.
+pub const KIND_DEFAULTS: &[(&str, &str, &str)] = &[("deepseek", "whale", "#7A8EDC")];
+
 const EYE_COLOR: &str = "#F5F2ED";
 const FALLBACK_COLOR: &str = "#B9B0A4";
 
@@ -45,6 +50,19 @@ pub fn palette_color(plan_id: &str) -> &'static str {
         .unwrap_or(FALLBACK_COLOR)
 }
 
+fn kind_default(plan_id: &str, settings: &Settings) -> Option<(&'static str, &'static str)> {
+    let kind = settings
+        .custom
+        .iter()
+        .find(|c| c.id == plan_id)?
+        .kind
+        .as_str();
+    KIND_DEFAULTS
+        .iter()
+        .find(|(k, _, _)| *k == kind)
+        .map(|(_, shape, color)| (*shape, *color))
+}
+
 pub fn color_for_plan(plan_id: &str, settings: &Settings) -> String {
     settings
         .balls
@@ -52,6 +70,7 @@ pub fn color_for_plan(plan_id: &str, settings: &Settings) -> String {
         .and_then(|ball| ball.color.as_deref())
         .filter(|c| !c.is_empty())
         .map(|c| c.to_string())
+        .or_else(|| kind_default(plan_id, settings).map(|(_, color)| color.to_string()))
         .unwrap_or_else(|| palette_color(plan_id).to_string())
 }
 
@@ -66,6 +85,7 @@ pub fn shape_for(plan_id: &str, settings: &Settings) -> ShapeKind {
                 .find(|(id, _)| *id == plan_id)
                 .map(|(_, shape)| (*shape).to_string())
         })
+        .or_else(|| kind_default(plan_id, settings).map(|(shape, _)| shape.to_string()))
         .unwrap_or_else(|| "blob".to_string());
     match configured.as_str() {
         "gem" => ShapeKind::Gem,
@@ -74,6 +94,8 @@ pub fn shape_for(plan_id: &str, settings: &Settings) -> ShapeKind {
         "cloud" => ShapeKind::Cloud,
         "square" => ShapeKind::Square,
         "drop" => ShapeKind::Drop,
+        "whale" => ShapeKind::Whale,
+        "cat" => ShapeKind::Cat,
         _ => ShapeKind::Blob,
     }
 }
@@ -519,5 +541,71 @@ mod tests {
             },
         );
         assert_eq!(color_for_plan("claude", &settings), "#8FB5D9");
+    }
+
+    fn custom(id: &str, kind: &str) -> dango_lib::settings::CustomPlan {
+        dango_lib::settings::CustomPlan {
+            id: id.into(),
+            kind: kind.into(),
+            name: kind.into(),
+            budget: None,
+        }
+    }
+
+    #[test]
+    fn deepseek_balls_default_to_the_whale_and_others_do_not() {
+        let mut settings = dango_lib::Settings::default();
+        settings.custom = vec![
+            custom("custom-deepseek-2", "deepseek"),
+            custom("custom-moonshot", "moonshot"),
+        ];
+        assert_eq!(shape_for("custom-deepseek-2", &settings), ShapeKind::Whale);
+        assert_eq!(color_for_plan("custom-deepseek-2", &settings), "#7A8EDC");
+        assert_eq!(shape_for("custom-moonshot", &settings), ShapeKind::Blob);
+        assert_eq!(color_for_plan("custom-moonshot", &settings), FALLBACK_COLOR);
+        // not in settings.custom -> the id alone never picks the whale
+        assert_eq!(shape_for("custom-deepseek", &settings), ShapeKind::Blob);
+        settings.balls.insert(
+            "custom-deepseek-2".into(),
+            BallSettings {
+                shape: Some("cat".into()),
+                color: Some("#D8A7A0".into()),
+            },
+        );
+        assert_eq!(shape_for("custom-deepseek-2", &settings), ShapeKind::Cat);
+        assert_eq!(color_for_plan("custom-deepseek-2", &settings), "#D8A7A0");
+    }
+
+    /// ui/common.js carries the same rings for the settings page; both
+    /// renderers must draw the identical whale / cat.
+    #[test]
+    fn extra_shapes_match_common_js() {
+        let js = include_str!("../../../ui/common.js");
+        let start = js.find("const EXTRA_SHAPES = ").expect("EXTRA_SHAPES") + 21;
+        let end = start + js[start..].find(";\n").unwrap();
+        let shapes: serde_json::Value = serde_json::from_str(&js[start..end]).unwrap();
+        for (name, kind) in [("whale", ShapeKind::Whale), ("cat", ShapeKind::Cat)] {
+            let data = grok_ball::data::get_shape_data(kind);
+            let js_shape = &shapes[name];
+            let ring = js_shape["ring"].as_array().unwrap();
+            assert_eq!(ring.len(), data.ring.len(), "{name}");
+            for (p, q) in ring.iter().zip(data.ring.iter()) {
+                assert_eq!(p[0].as_f64().unwrap(), q.x, "{name}");
+                assert_eq!(p[1].as_f64().unwrap(), q.y, "{name}");
+            }
+            let face = &js_shape["face"];
+            assert_eq!(face["x"].as_f64().unwrap(), data.face.x, "{name}");
+            assert_eq!(face["y"].as_f64().unwrap(), data.face.y, "{name}");
+            assert_eq!(face["sx"].as_f64().unwrap(), data.face.sx, "{name}");
+            assert_eq!(face["sy"].as_f64().unwrap(), data.face.sy, "{name}");
+            assert_eq!(face["eye"].as_f64().unwrap(), data.face.eye, "{name}");
+            assert_eq!(js_shape["tiltScale"].as_f64().unwrap(), data.tilt_scale);
+        }
+        for (kind, shape, color) in KIND_DEFAULTS {
+            assert!(
+                js.contains(&format!("{kind}: {{ shape: '{shape}', color: '{color}' }}")),
+                "KIND_DEFAULTS {kind} out of sync with common.js"
+            );
+        }
     }
 }
